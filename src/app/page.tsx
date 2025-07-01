@@ -162,7 +162,7 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
   );
 };
 
-const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
+function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
   const [miniCalendarSelectedDay, setMiniCalendarSelectedDay] = useState<number | null>(1);
   const miniCalendarDays = [...Array(2).fill(null), ...Array.from({ length: 31 }, (_, i) => i + 1)];
   const miniCalendarDaysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -187,9 +187,9 @@ const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="flex w-full max-w-full flex-1"
+      className="w-full flex-1 flex"
     >
-      <div className="flex flex-col md:flex-row w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden h-full">
+      <div className="flex flex-col md:flex-row w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
         {/* Left Panel */}
         <div className="w-full md:w-[280px] p-4 flex flex-col border-b md:border-b-0 md:border-r border-gray-700/50 text-white">
           <div className='space-y-4 flex-grow'>
@@ -382,8 +382,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body ${view === 'month' ? 'p-4' : 'p-2 md:p-4'}`}>
-      <main className={`w-full flex-1 flex flex-col ${view === 'month' ? 'items-center justify-center' : ''}`}>
+    <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body ${view === 'month' ? 'p-4 items-center justify-center' : 'p-2 md:p-4'}`}>
         <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" events={events} view={view} setView={setView} setDialogEvent={setDialogEvent} />
@@ -391,7 +390,6 @@ export default function CalendarPage() {
             <WeekView key="week" events={events} view={view} setView={setView} setDialogEvent={setDialogEvent} />
           )}
         </AnimatePresence>
-      </main>
       <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
         <DialogContent className="bg-orange-900 text-orange-50 border-orange-800">
           {dialogEvent && dialogEvent.length > 0 && (
@@ -419,5 +417,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
