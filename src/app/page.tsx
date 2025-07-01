@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
@@ -30,9 +37,10 @@ interface ViewProps {
   events: Events;
   view: 'month' | 'week';
   setView: React.Dispatch<React.SetStateAction<'month' | 'week'>>;
+  setDialogEvent: (event: Event) => void;
 }
 
-const MonthView = ({ events, view, setView }: ViewProps) => {
+const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
   const [selectedDay, setSelectedDay] = useState<number | null>(1);
 
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -119,7 +127,14 @@ const MonthView = ({ events, view, setView }: ViewProps) => {
                 >
                   <Button
                     variant={day === selectedDay ? 'default' : 'ghost'}
-                    onClick={() => day && setSelectedDay(day)}
+                    onClick={() => {
+                      if (day) {
+                        setSelectedDay(day);
+                        if (events[day]) {
+                          setDialogEvent(events[day]);
+                        }
+                      }
+                    }}
                     disabled={!day}
                     className={`
                       h-14 w-14 p-0 rounded-md relative w-full
@@ -142,7 +157,7 @@ const MonthView = ({ events, view, setView }: ViewProps) => {
   );
 };
 
-const WeekView = ({ events, view, setView }: ViewProps) => {
+const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
   const [miniCalendarSelectedDay, setMiniCalendarSelectedDay] = useState<number | null>(1);
   const miniCalendarDays = [...Array(2).fill(null), ...Array.from({ length: 31 }, (_, i) => i + 1)];
   const miniCalendarDaysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -262,7 +277,12 @@ const WeekView = ({ events, view, setView }: ViewProps) => {
                          
                          if (event.startHour >= gridStartHour) {
                            return (
-                             <div key={eventDay} className="absolute w-full px-1" style={{ top: `${top}%`, height: `${height}%` }}>
+                             <div
+                               key={eventDay}
+                               className="absolute w-full px-1 cursor-pointer"
+                               style={{ top: `${top}%`, height: `${height}%` }}
+                               onClick={() => setDialogEvent(event)}
+                              >
                                <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col bg-${event.color}-500/20 border border-${event.color}-500/50`}>
                                  <span className="font-bold">{event.title}</span>
                                  <span>{event.details}</span>
@@ -287,6 +307,7 @@ const WeekView = ({ events, view, setView }: ViewProps) => {
 
 export default function CalendarPage() {
   const [view, setView] = useState<'month' | 'week'>('month');
+  const [dialogEvent, setDialogEvent] = useState<Event | null>(null);
   
   const events: Events = {
     1: {
@@ -323,9 +344,31 @@ export default function CalendarPage() {
     <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body ${view === 'month' ? 'p-4' : 'p-2 md:p-4'}`}>
       <main className={`w-full flex-1 flex ${view === 'month' ? 'items-center justify-center' : ''}`}>
         <AnimatePresence mode="wait">
-          {view === 'month' ? <MonthView key="month" events={events} view={view} setView={setView} /> : <WeekView key="week" events={events} view={view} setView={setView} />}
+          {view === 'month' ? (
+            <MonthView key="month" events={events} view={view} setView={setView} setDialogEvent={setDialogEvent} />
+          ) : (
+            <WeekView key="week" events={events} view={view} setView={setView} setDialogEvent={setDialogEvent} />
+          )}
         </AnimatePresence>
       </main>
+      <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
+        <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50">
+          {dialogEvent && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{dialogEvent.title}</DialogTitle>
+                <DialogDescription className="text-gray-400">
+                  {dialogEvent.details}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-2">
+                  <p><strong>Time:</strong> {dialogEvent.startHour}:00 - {dialogEvent.endHour}:00</p>
+                  <p>A detailed description of the event would go here. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
