@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -29,15 +30,15 @@ export async function isAdminUser(): Promise<boolean> {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!user || !user.email) {
       return false;
     }
     
-    // Check if the user's ID exists in the admins table.
+    // Check if the user's email exists in the admin_emails table.
     const { data: admin, error } = await supabase
-      .from('admins')
-      .select('user_id')
-      .eq('user_id', user.id)
+      .from('admin_emails')
+      .select('email')
+      .eq('email', user.email)
       .single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = 'No rows found'
