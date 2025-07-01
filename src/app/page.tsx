@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -152,9 +153,9 @@ const WeekView = () => {
       transition={{ duration: 0.3 }}
       className="flex w-full h-full max-w-full"
     >
-      <div className="flex w-full h-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
+      <div className="flex flex-col md:flex-row w-full h-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
         {/* Left Panel */}
-        <div className="w-[280px] p-4 flex flex-col border-r border-gray-700/50 text-white">
+        <div className="w-full md:w-[280px] p-4 flex flex-col border-b md:border-b-0 md:border-r border-gray-700/50 text-white">
           <div className='space-y-4 flex-grow'>
             <h1 className="text-xl font-bold">Designali</h1>
             <p className="text-gray-400 text-sm">{event.title}</p>
@@ -191,13 +192,13 @@ const WeekView = () => {
 
         {/* Right Panel */}
         <div className="flex-1 flex flex-col">
-          <header className="p-4 flex justify-between items-center border-b border-gray-700/50 h-16 shrink-0">
+          <header className="p-4 flex justify-between items-center flex-wrap gap-y-2 border-b border-gray-700/50 shrink-0">
             <div className="flex items-center gap-2">
               <h2 className="font-semibold">Jul 1-7, 2025</h2>
               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700"><ChevronLeft className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700"><ChevronRight className="w-4 h-4" /></Button>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap justify-end">
               <div className="flex items-center space-x-2">
                 <Switch id="overlay-calendar" className="data-[state=checked]:bg-white" />
                 <Label htmlFor="overlay-calendar" className="text-sm">Overlay my calendar</Label>
@@ -218,11 +219,11 @@ const WeekView = () => {
               ))}
             </div>
 
-            <div className="flex-1 flex overflow-y-auto">
+            <div className="flex-1 flex overflow-auto">
               <div className="w-16 text-xs text-gray-500 text-right pr-2">
                 {timeSlots.map(time => <div key={time} className="h-16 -mt-2 pt-2">{time}</div>)}
               </div>
-              <div className="flex-1 grid grid-cols-7 bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,hsl(var(--card-foreground)/0.02)_4px,hsl(var(--card-foreground)/0.02)_5px)]">
+              <div className="flex-1 grid grid-cols-7 bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,hsl(var(--card-foreground)/0.02)_4px,hsl(var(--card-foreground)/0.02)_5px)] min-w-[500px]">
                 {weekDays.map(day => (
                   <div key={day} className="border-l border-gray-700/50 relative">
                     {timeSlots.map(time => <div key={time} className="h-16 border-b border-gray-700/50"></div>)}
@@ -247,7 +248,7 @@ export default function CalendarPage() {
   const [view, setView] = useState<'month' | 'week'>('month');
   
   return (
-    <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body ${view === 'month' ? 'items-center justify-center p-4' : 'p-2 md:p-4'}`}>
+    <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body ${view === 'month' ? 'p-4' : 'p-2 md:p-4'}`}>
       <header className="absolute top-4 right-4 flex items-center gap-4 z-10">
         <div className="flex items-center gap-1 p-1 bg-gray-800 rounded-md">
           <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'month' ? 'bg-gray-600' : ''}`}>
@@ -259,7 +260,7 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      <main className="w-full h-full flex-1 flex">
+      <main className={`w-full h-full flex-1 flex ${view === 'month' ? 'items-center justify-center' : ''}`}>
         <AnimatePresence mode="wait">
           {view === 'month' ? <MonthView key="month" /> : <WeekView key="week" />}
         </AnimatePresence>
