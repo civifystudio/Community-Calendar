@@ -5,8 +5,6 @@ import { Separator } from '@/components/ui/separator';
 import {
   ChevronLeft,
   ChevronRight,
-  Clock,
-  Video,
   Globe,
   CalendarDays,
   Columns3,
@@ -50,27 +48,28 @@ export default function CalendarPage() {
         <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl p-6">
           <CardContent className="p-0 flex gap-8">
             <div className="w-1/3 space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <p className="text-sm text-gray-400">Ali Imam</p>
-              </div>
-              <h1 className="text-2xl font-bold">Designali</h1>
-              <p className="text-gray-400">Briefing about Design</p>
+              <h1 className="text-2xl font-bold">Community Events</h1>
+              <p className="text-gray-400">Upcoming events in our community.</p>
               <Separator className="bg-gray-700/50" />
-              <div className="space-y-3 text-sm text-gray-300">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span>30m</span>
+              <div className="space-y-4 text-sm text-gray-300">
+                <div>
+                  <p className="font-semibold">Farmer's Market</p>
+                  <p className="text-gray-400 text-xs">Every Saturday, 8am - 12pm</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Video className="w-4 h-4 text-gray-400" />
-                  <span>Cal Video</span>
+                 <div>
+                  <p className="font-semibold">Library Book Club</p>
+                  <p className="text-gray-400 text-xs">First Tuesday of the month, 6pm</p>
                 </div>
-                <div className="flex items-center gap-2 cursor-pointer">
-                  <Globe className="w-4 h-4 text-gray-400" />
-                  <span>America/Los Angeles</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                 <div>
+                  <p className="font-semibold">Park Cleanup Day</p>
+                  <p className="text-gray-400 text-xs">July 19th, 9am</p>
                 </div>
+              </div>
+              <Separator className="bg-gray-700/50" />
+              <div className="flex items-center gap-2 cursor-pointer">
+                <Globe className="w-4 h-4 text-gray-400" />
+                <span>Arvin, CA</span>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
               </div>
             </div>
 
