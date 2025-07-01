@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -172,6 +173,13 @@ const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
   const gridStartHour = 3;
   const totalHoursInGrid = 15;
 
+  const eventColorClasses = {
+    green: 'bg-green-500/20 border-green-500/50 hover:bg-green-500/30 transition-colors',
+    blue: 'bg-blue-500/20 border-blue-500/50 hover:bg-blue-500/30 transition-colors',
+    purple: 'bg-purple-500/20 border-purple-500/50 hover:bg-purple-500/30 transition-colors',
+    yellow: 'bg-yellow-500/20 border-yellow-500/50 hover:bg-yellow-500/30 transition-colors',
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -226,7 +234,12 @@ const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
             </div>
             <div className="grid grid-cols-7 gap-1">
               {miniCalendarDays.map((day, index) => (
-                 <div key={index} className="relative">
+                 <motion.div 
+                    key={index} 
+                    className="relative"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                >
                     <Button variant={day === miniCalendarSelectedDay ? 'default' : 'ghost'} onClick={() => day && setMiniCalendarSelectedDay(day)} disabled={!day}
                       className={`h-8 w-8 p-0 rounded-md relative text-xs w-full ${!day ? 'invisible' : ''} ${day === miniCalendarSelectedDay ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}`}>
                       {day}
@@ -234,7 +247,7 @@ const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                     {day && events[day] && events[day].length > 0 && (
                       <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 ${day === miniCalendarSelectedDay ? 'bg-black' : 'bg-white'} rounded-full`}></div>
                     )}
-                 </div>
+                 </motion.div>
               ))}
             </div>
           </div>
@@ -271,31 +284,39 @@ const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
               <div className="w-16 text-xs text-gray-500 text-right pr-2 flex flex-col">
                 {timeSlots.map(time => <div key={time} className="flex-1 -mt-2 pt-2">{time}</div>)}
               </div>
-              <div className="flex-1 grid grid-cols-7 bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,hsl(var(--card-foreground)/0.02)_4px,hsl(var(--card-foreground)/0.02)_5px)]">
+              <div className="flex-1 grid grid-cols-7">
                 {weekDays.map((day, dayIndex) => {
                    const currentDayNumber = dayIndex + 1;
                    const dayEvents = (events[currentDayNumber] || []).filter(event => event.startHour >= gridStartHour);
                    return (
                       <div key={day} className="border-l border-gray-700/50 relative flex flex-col">
                         {timeSlots.map(time => <div key={time} className="flex-1 border-b border-gray-700/50"></div>)}
+                        <AnimatePresence>
                         {dayEvents.map((event, eventIndex) => {
                            const top = ((event.startHour - gridStartHour) / totalHoursInGrid) * 100;
                            const height = ((event.endHour - event.startHour) / totalHoursInGrid) * 100;
                            
                            return (
-                             <div
+                             <motion.div
                                key={eventIndex}
+                               layout
+                               initial={{ opacity: 0, scale: 0.9 }}
+                               animate={{ opacity: 1, scale: 1 }}
+                               exit={{ opacity: 0, scale: 0.9 }}
+                               whileHover={{ scale: 1.05, zIndex: 10, shadow: 'lg' }}
+                               transition={{ duration: 0.2 }}
                                className="absolute w-full px-1 cursor-pointer"
                                style={{ top: `${top}%`, height: `${height}%` }}
                                onClick={() => setDialogEvent(events[currentDayNumber])}
                               >
-                               <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col bg-${event.color}-500/20 border border-${event.color}-500/50`}>
+                               <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col border ${eventColorClasses[event.color as keyof typeof eventColorClasses]}`}>
                                  <span className="font-bold">{event.title}</span>
                                  <span>{event.details}</span>
                                </div>
-                             </div>
+                             </motion.div>
                            )
                         })}
+                        </AnimatePresence>
                       </div>
                    )
                 })}
