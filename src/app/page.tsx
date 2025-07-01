@@ -58,23 +58,26 @@ export default function CalendarPage() {
       <main className="w-full max-w-4xl mx-auto">
         <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl">
           <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-8">
-            <div className="w-full md:w-1/3 space-y-4">
-              <h1 className="text-2xl font-bold">Community Events</h1>
-              <p className="text-gray-400">Upcoming events in our community.</p>
-              <Separator className="bg-gray-700/50" />
-              <div className="space-y-4 text-sm text-gray-300 min-h-[100px]">
-                {selectedEvent ? (
-                  <div>
-                    <p className="font-semibold">{selectedEvent.title}</p>
-                    <p className="text-gray-400 text-xs">{selectedEvent.details}</p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-gray-400">No event scheduled for this day.</p>
-                  </div>
-                )}
+            <div className="w-full md:w-1/3 flex flex-col">
+              <div className='space-y-4'>
+                <h1 className="text-2xl font-bold">Community Events</h1>
+                <p className="text-gray-400">Upcoming events in our community.</p>
+                <Separator className="bg-gray-700/50" />
+                <div className="space-y-4 text-sm text-gray-300 min-h-[100px]">
+                  {selectedEvent ? (
+                    <div>
+                      <p className="font-semibold">{selectedEvent.title}</p>
+                      <p className="text-gray-400 text-xs">{selectedEvent.details}</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-gray-400">No event scheduled for this day.</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2 pt-4">
+
+              <div className="flex items-center gap-2 mt-auto pt-4">
                 <span>Arvin, CA</span>
               </div>
             </div>
