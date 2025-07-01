@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
+  // Check if the environment variables are set. This is a crucial first step.
   const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -34,13 +35,14 @@ export default function LoginPage() {
       });
 
       if (signInError) {
+        // This handles incorrect email/password errors from Supabase.
         setError(signInError.message);
         setLoading(false);
         return;
       }
 
       if (data.user) {
-          // After a successful login, check if the user is in the admins table.
+          // After a successful login, check if the user is in the admin_emails table.
           const isAdmin = await isAdminUser();
           if (isAdmin) {
               router.push('/');
@@ -57,12 +59,13 @@ export default function LoginPage() {
     } catch (e) {
       // This catch block handles network errors, like the "Failed to fetch" error.
       console.error(e);
-      setError("Could not connect to the server. Please ensure your Supabase credentials are correct in .env.local and restart the application.");
+      setError("Could not connect to the server. Please ensure your Supabase credentials are correct in .env.local and that you have restarted the application server.");
     }
 
     setLoading(false);
   };
   
+  // If Supabase is not configured, show a helpful message instead of the login form.
   if (!isSupabaseConfigured) {
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
