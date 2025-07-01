@@ -13,8 +13,6 @@ import {
   Clock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 interface Event {
   title: string;
@@ -28,7 +26,13 @@ interface Events {
   [key: number]: Event;
 }
 
-const MonthView = ({ events }: { events: Events }) => {
+interface ViewProps {
+  events: Events;
+  view: 'month' | 'week';
+  setView: React.Dispatch<React.SetStateAction<'month' | 'week'>>;
+}
+
+const MonthView = ({ events, view, setView }: ViewProps) => {
   const [selectedDay, setSelectedDay] = useState<number | null>(1);
 
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -84,13 +88,23 @@ const MonthView = ({ events }: { events: Events }) => {
 
           <div className="flex-1">
             <div className="flex items-center justify-between mb-4">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <h2 className="font-semibold">July 2025</h2>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+               <div className="flex items-center">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <h2 className="font-semibold px-2">July 2025</h2>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-1 p-1 bg-black/30 rounded-md">
+                <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'month' ? 'bg-gray-600' : ''}`}>
+                  <CalendarDays className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'week' ? 'bg-gray-600' : ''}`}>
+                  <Columns3 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-7 gap-4 text-center text-xs text-gray-400 mb-2">
               {days.map((day) => <div key={day}>{day}</div>)}
@@ -128,7 +142,7 @@ const MonthView = ({ events }: { events: Events }) => {
   );
 };
 
-const WeekView = ({ events }: { events: Events }) => {
+const WeekView = ({ events, view, setView }: ViewProps) => {
   const [miniCalendarSelectedDay, setMiniCalendarSelectedDay] = useState<number | null>(1);
   const miniCalendarDays = [...Array(2).fill(null), ...Array.from({ length: 31 }, (_, i) => i + 1)];
   const miniCalendarDaysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -213,11 +227,13 @@ const WeekView = ({ events }: { events: Events }) => {
               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700"><ChevronLeft className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700"><ChevronRight className="w-4 h-4" /></Button>
             </div>
-            <div className="flex items-center gap-4 flex-wrap justify-end">
-              <div className="flex items-center gap-1 p-1 bg-black/30 rounded-md">
-                  <Button className="h-7 text-xs px-2 bg-gray-700 hover:bg-gray-600">Week</Button>
-                  <Button className="h-7 text-xs px-2 bg-transparent hover:bg-gray-700">Month</Button>
-              </div>
+            <div className="flex items-center gap-1 p-1 bg-black/30 rounded-md">
+              <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'month' ? 'bg-gray-600' : ''}`}>
+                <CalendarDays className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'week' ? 'bg-gray-600' : ''}`}>
+                <Columns3 className="h-4 w-4" />
+              </Button>
             </div>
           </header>
 
@@ -305,20 +321,9 @@ export default function CalendarPage() {
 
   return (
     <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body ${view === 'month' ? 'p-4' : 'p-2 md:p-4'}`}>
-      <header className="absolute top-4 right-4 flex items-center gap-4 z-10">
-        <div className="flex items-center gap-1 p-1 bg-gray-800 rounded-md">
-          <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'month' ? 'bg-gray-600' : ''}`}>
-            <CalendarDays className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'week' ? 'bg-gray-600' : ''}`}>
-            <Columns3 className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
-
       <main className={`w-full h-full flex-1 flex ${view === 'month' ? 'items-center justify-center' : ''}`}>
         <AnimatePresence mode="wait">
-          {view === 'month' ? <MonthView key="month" events={events} /> : <WeekView key="week" events={events} />}
+          {view === 'month' ? <MonthView key="month" events={events} view={view} setView={setView} /> : <WeekView key="week" events={events} view={view} setView={setView} />}
         </AnimatePresence>
       </main>
     </div>
