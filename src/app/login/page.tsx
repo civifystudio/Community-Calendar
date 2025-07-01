@@ -39,14 +39,16 @@ export default function LoginPage() {
     }
 
     if (data.user) {
+        // After a successful login, check if the user is in the admins table.
         const isAdmin = await isAdminUser();
         if (isAdmin) {
             router.push('/');
             router.refresh(); 
             return;
         } else {
+            // If they are not an admin, sign them out immediately.
             await supabase.auth.signOut();
-            setError('Access denied. Only the designated administrator can log in.');
+            setError('Access denied. You are not an administrator.');
         }
     } else {
         setError("Sign-in successful, but user data could not be retrieved.");

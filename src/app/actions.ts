@@ -29,13 +29,24 @@ export async function isAdminUser(): Promise<boolean> {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // The admin is identified by the email in the .env.local file.
-    // This check is secure because it runs on the server.
-    if (!user || !process.env.ADMIN_EMAIL) {
+    if (!user) {
       return false;
     }
     
-    return user.email === process.env.ADMIN_EMAIL;
+    // Check if the user's ID exists in the admins table.
+    const { data: admin, error } = await supabase
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = 'No rows found'
+        console.error('Error checking admin status:', error);
+        return false;
+    }
+    
+    // If a record was found, the user is an admin.
+    return !!admin;
   } catch (error) {
     console.error("Error in isAdminUser:", error);
     return false;
