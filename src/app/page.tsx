@@ -11,6 +11,7 @@ import {
   Columns3,
   LayoutPanelLeft,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState<number | null>(1);
@@ -56,68 +57,89 @@ export default function CalendarPage() {
       </header>
 
       <main className="w-full max-w-4xl mx-auto">
-        <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl">
-          <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-8">
-            <div className="w-full md:w-1/3 flex flex-col">
-              <div className='space-y-4'>
-                <h1 className="text-2xl font-bold">Community Events</h1>
-                <p className="text-gray-400">Upcoming events in our community.</p>
-                <Separator className="bg-gray-700/50" />
-                <div className="space-y-4 text-sm text-gray-300 min-h-[100px]">
-                  {selectedEvent ? (
-                    <div>
-                      <p className="font-semibold">{selectedEvent.title}</p>
-                      <p className="text-gray-400 text-xs">{selectedEvent.details}</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-gray-400">No event scheduled for this day.</p>
-                    </div>
-                  )}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        >
+          <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
+            <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-8">
+              <div className="w-full md:w-1/3 flex flex-col">
+                <div className='space-y-4'>
+                  <h1 className="text-2xl font-bold">Community Events</h1>
+                  <p className="text-gray-400">Upcoming events in our community.</p>
+                  <Separator className="bg-gray-700/50" />
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={selectedDay}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4 text-sm text-gray-300 min-h-[100px]"
+                    >
+                      {selectedEvent ? (
+                        <div>
+                          <p className="font-semibold">{selectedEvent.title}</p>
+                          <p className="text-gray-400 text-xs">{selectedEvent.details}</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-gray-400">No event scheduled for this day.</p>
+                        </div>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex items-center gap-2 mt-auto pt-4">
+                  <span>Arvin, CA</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 mt-auto pt-4">
-                <span>Arvin, CA</span>
-              </div>
-            </div>
-
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-4">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <h2 className="font-semibold">July 2025</h2>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="grid grid-cols-7 gap-4 text-center text-xs text-gray-400 mb-2">
-                {days.map((day) => <div key={day}>{day}</div>)}
-              </div>
-              <div className="grid grid-cols-7 gap-4">
-                {calendarDays.map((day, index) => (
-                  <Button
-                    key={index}
-                    variant={day === selectedDay ? 'default' : 'ghost'}
-                    onClick={() => day && setSelectedDay(day)}
-                    disabled={!day}
-                    className={`
-                      h-14 w-14 p-0 rounded-md relative
-                      ${day === selectedDay ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
-                      ${!day ? 'invisible' : ''}
-                    `}
-                  >
-                    {day}
-                    {day && events[day] && (
-                      <div className={`absolute bottom-2 w-1.5 h-1.5 ${day === selectedDay ? 'bg-black' : 'bg-white'} rounded-full`}></div>
-                    )}
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-4">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
+                    <ChevronLeft className="w-4 h-4" />
                   </Button>
-                ))}
+                  <h2 className="font-semibold">July 2025</h2>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-7 gap-4 text-center text-xs text-gray-400 mb-2">
+                  {days.map((day) => <div key={day}>{day}</div>)}
+                </div>
+                <div className="grid grid-cols-7 gap-4">
+                  {calendarDays.map((day, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="relative"
+                    >
+                      <Button
+                        variant={day === selectedDay ? 'default' : 'ghost'}
+                        onClick={() => day && setSelectedDay(day)}
+                        disabled={!day}
+                        className={`
+                          h-14 w-14 p-0 rounded-md relative w-full
+                          ${day === selectedDay ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
+                          ${!day ? 'invisible' : ''}
+                        `}
+                      >
+                        {day}
+                        {day && events[day] && (
+                          <div className={`absolute bottom-2 w-1.5 h-1.5 ${day === selectedDay ? 'bg-black' : 'bg-white'} rounded-full`}></div>
+                        )}
+                      </Button>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
       </main>
     </div>
   );
