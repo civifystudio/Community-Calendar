@@ -29,7 +29,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays, parseISO } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
-import { getEvents, addEvent, updateEvent, deleteEvent, signOut, CalendarEvent } from './actions';
+import { getEvents, addEvent, updateEvent, deleteEvent, signOut, CalendarEvent, isAdminUser } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -559,19 +559,20 @@ export default function CalendarPage() {
   }, [fetchAndSetEvents]);
 
   useEffect(() => {
-    const getSession = async () => {
+    const checkUserStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-      setIsAdmin(!!adminEmail && session?.user?.email === adminEmail);
+      const adminStatus = await isAdminUser();
+      setIsAdmin(adminStatus);
     };
-    getSession();
+
+    checkUserStatus();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setUser(session?.user ?? null);
-        const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-        setIsAdmin(!!adminEmail && session?.user?.email === adminEmail);
+        const adminStatus = await isAdminUser();
+        setIsAdmin(adminStatus);
         fetchAndSetEvents(); // Refetch events on auth change
       }
     );

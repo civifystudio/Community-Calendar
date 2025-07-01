@@ -34,6 +34,22 @@ async function verifyAdmin() {
     return user;
 }
 
+export async function isAdminUser(): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user || !process.env.ADMIN_EMAIL) {
+      return false;
+    }
+    
+    return user.email === process.env.ADMIN_EMAIL;
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    return false;
+  }
+}
+
 
 export async function addEvent(event: Omit<CalendarEvent, 'id'>) {
   await verifyAdmin();
