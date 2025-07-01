@@ -562,10 +562,8 @@ export default function CalendarPage() {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-      // This is a temp solution for checking admin on client.
-      // Real check is done on server.
       const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-      setIsAdmin(session?.user?.email === adminEmail);
+      setIsAdmin(!!adminEmail && session?.user?.email === adminEmail);
     };
     getSession();
 
@@ -573,7 +571,7 @@ export default function CalendarPage() {
       (_event, session) => {
         setUser(session?.user ?? null);
         const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-        setIsAdmin(session?.user?.email === adminEmail);
+        setIsAdmin(!!adminEmail && session?.user?.email === adminEmail);
         fetchAndSetEvents(); // Refetch events on auth change
       }
     );
