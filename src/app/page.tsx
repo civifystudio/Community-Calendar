@@ -89,10 +89,10 @@ export default function CalendarPage() {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-xs text-gray-400 mb-2">
+              <div className="grid grid-cols-7 gap-2 md:gap-4 text-center text-xs text-gray-400 mb-2">
                 {days.map((day) => <div key={day}>{day}</div>)}
               </div>
-              <div className="grid grid-cols-7 gap-1 md:gap-2">
+              <div className="grid grid-cols-7 gap-2 md:gap-4">
                 {calendarDays.map((day, index) => (
                   <Button
                     key={index}
@@ -100,14 +100,14 @@ export default function CalendarPage() {
                     onClick={() => day && setSelectedDay(day)}
                     disabled={!day}
                     className={`
-                      h-7 w-7 p-0 rounded-md relative
+                      h-10 w-10 p-0 rounded-md relative
                       ${day === selectedDay ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
                       ${!day ? 'invisible' : ''}
                     `}
                   >
                     {day}
                     {day && events[day] && (
-                      <div className={`absolute bottom-1.5 w-1 h-1 ${day === selectedDay ? 'bg-black' : 'bg-white'} rounded-full`}></div>
+                      <div className={`absolute bottom-2 w-1.5 h-1.5 ${day === selectedDay ? 'bg-black' : 'bg-white'} rounded-full`}></div>
                     )}
                   </Button>
                 ))}
