@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -23,10 +22,6 @@ export default function CalendarPage() {
     ...Array.from({ length: 31 }, (_, i) => i + 1),
   ];
   
-  const timeSlots = [
-    '20:30', '21:00', '21:30', '22:00', '22:30', '23:00', '23:30'
-  ];
-
   const events: { [key: number]: { title: string; details: string } } = {
     1: {
       title: "Farmer's Market",
@@ -44,19 +39,9 @@ export default function CalendarPage() {
 
   const selectedEvent = selectedDay ? events[selectedDay] : null;
 
-  const getFormattedDate = (day: number | null) => {
-    if (!day) return '';
-    const date = new Date(2025, 6, day); // July is month 6
-    return date.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit' }).replace(',', '');
-  };
-
   return (
     <div className="bg-[#111111] text-white min-h-screen flex flex-col items-center justify-center p-4 font-body">
       <header className="absolute top-4 right-4 flex items-center gap-4 z-10">
-        <div className="flex items-center gap-2">
-          <Switch id="overlay-calendar" />
-          <label htmlFor="overlay-calendar" className="text-sm">Overlay my calendar</label>
-        </div>
         <div className="flex items-center gap-1 p-1 bg-gray-800 rounded-md">
           <Button variant="ghost" size="icon" className="text-white hover:bg-gray-700 h-8 w-8">
             <CalendarDays className="h-4 w-4" />
@@ -125,23 +110,6 @@ export default function CalendarPage() {
                       <div className={`absolute bottom-1.5 w-1 h-1 ${day === selectedDay ? 'bg-black' : 'bg-white'} rounded-full`}></div>
                     )}
                   </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="w-[200px] pl-8 border-l border-gray-700/50">
-              <div className="flex items-center justify-between mb-4">
-                <p className="font-semibold">{getFormattedDate(selectedDay)}</p>
-                <div className="flex items-center bg-[#111111] rounded-md p-0.5 text-xs">
-                  <Button variant="ghost" size="sm" className="h-6 px-2 bg-gray-700/50 text-white hover:bg-gray-600">12h</Button>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-gray-400 hover:text-white">24h</Button>
-                </div>
-              </div>
-              <div className="space-y-2 h-[240px] overflow-y-auto pr-2">
-                {timeSlots.map((time) => (
-                   <Button key={time} variant="outline" className="w-full justify-center border-gray-700/50 bg-transparent text-gray-300 hover:bg-gray-800 hover:text-white">
-                     {time}
-                   </Button>
                 ))}
               </div>
             </div>
