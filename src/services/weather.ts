@@ -49,7 +49,7 @@ export async function getWeatherForDay(dateObj: Date | null): Promise<WeatherDat
 
   try {
     const response = await fetch(apiUrl, { 
-      cache: 'no-store',
+      next: { revalidate: 3600 }, // Cache for 1 hour
       headers: { 'Accept': 'application/json' }
     });
     
