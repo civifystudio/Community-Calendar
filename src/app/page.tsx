@@ -334,7 +334,7 @@ const getEventLayouts = (dayEvents: CalendarEvent[]): LaidOutEvent[] => {
 };
 
 
-function WeekView({ events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent }: ViewProps) {
+function WeekView({ events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent }: ViewProps) {
   const miniCalendarDaysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   const firstDayOfMonth = getDay(new Date(displayDate.getFullYear(), displayDate.getMonth(), 1));
@@ -390,13 +390,16 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
                     className="space-y-2 text-sm text-gray-300 min-h-[60px]"
                   >
                     {selectedDayEvents && selectedDayEvents.length > 0 ? (
-                      <div className="space-y-2">
-                      {selectedDayEvents.map((event, index) => (
-                      <div key={index}>
-                          <div className="flex items-center gap-2 font-semibold text-sm"><Clock className="size-4 shrink-0" /> {event.title}</div>
-                          <div className="flex items-center gap-2 pl-6 text-xs text-gray-400"><CalendarDays className="size-4 shrink-0" /> {event.details}</div>
-                      </div>
-                      ))}
+                      <div className="space-y-3">
+                        {selectedDayEvents.map((event, index) => (
+                          <div key={index} className="flex justify-between items-start">
+                            <div>
+                              <p className="font-semibold">{event.title}</p>
+                              <p className="text-gray-400 text-xs">{event.details}</p>
+                            </div>
+                             {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditEvent(event)}><Edit className="h-4 w-4"/></Button>}
+                          </div>
+                        ))}
                       </div>
                     ) : (
                        <p className="text-gray-400">No events for this day.</p>
