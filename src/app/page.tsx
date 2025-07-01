@@ -9,7 +9,6 @@ import {
   ChevronRight,
   CalendarDays,
   Columns3,
-  LayoutPanelLeft,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -49,9 +48,6 @@ export default function CalendarPage() {
           </Button>
           <Button variant="ghost" size="icon" className="text-white hover:bg-gray-700 h-8 w-8">
             <Columns3 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:bg-gray-700 h-8 w-8">
-            <LayoutPanelLeft className="h-4 w-4" />
           </Button>
         </div>
       </header>
