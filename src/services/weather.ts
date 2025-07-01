@@ -33,12 +33,17 @@ export async function getWeatherForDay(dateObj: Date | null): Promise<WeatherDat
   if (!dateObj) return null;
 
   // Arvin, CA coordinates
-  const location = '35.2,-118.83';
+  const location = '35.207,-118.828';
   const apiKey = process.env.TOMORROW_API_KEY;
 
   if (!apiKey) {
     console.error('Tomorrow.io API key is not set.');
-    return null;
+    // Return a default value for UI development without an API key.
+    return {
+      temp: 75,
+      condition: 'Sunny',
+      icon: 'Sun',
+    };
   }
   
   const fields = 'weatherCode,temperature';
@@ -72,7 +77,8 @@ export async function getWeatherForDay(dateObj: Date | null): Promise<WeatherDat
     const dailyForecast = data.timelines.daily.find((day: any) => day.time.startsWith(requestedDateStr));
 
     if (!dailyForecast) {
-      console.error(`No forecast found for date: ${requestedDateStr}`);
+      // API might not have forecast for dates too far in the past/future
+      // console.warn(`No forecast found for date: ${requestedDateStr}`);
       return null;
     }
 

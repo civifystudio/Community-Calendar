@@ -25,7 +25,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { getWeatherForDay } from '@/services/weather';
 import type { WeatherData } from '@/services/weather';
-import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate } from 'date-fns';
+import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays } from 'date-fns';
 
 
 interface Event {
@@ -52,8 +52,8 @@ interface ViewProps {
   setDialogEvent: (event: Event[] | null) => void;
   displayDate: Date;
   setDisplayDate: React.Dispatch<React.SetStateAction<Date>>;
-  selectedDate: Date | null;
-  setSelectedDate: React.Dispatch<React.SetStateAction<Date | null>>;
+  selectedDate: Date;
+  setSelectedDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
 const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate }: ViewProps) => {
@@ -141,7 +141,10 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
             </div>
             <div className="grid grid-cols-7 gap-4">
               {calendarDays.map((day, index) => {
-                const isSelected = day && selectedDate ? isSameDay(selectedDate, new Date(displayDate.getFullYear(), displayDate.getMonth(), day)) : false;
+                const dayDate = day ? new Date(displayDate.getFullYear(), displayDate.getMonth(), day) : null;
+                const isSelected = dayDate && isSameDay(selectedDate, dayDate);
+                const isToday = dayDate && isSameDay(new Date(), dayDate);
+
                 return (
                 <motion.div
                   key={index}
@@ -150,16 +153,17 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                   className="relative"
                 >
                   <Button
-                    variant={isSelected ? 'default' : 'ghost'}
+                    variant={isSelected ? 'default' : isToday ? 'secondary' : 'ghost'}
                     onClick={() => {
-                      if (day) {
-                        setSelectedDate(new Date(displayDate.getFullYear(), displayDate.getMonth(), day));
+                      if (dayDate) {
+                        setSelectedDate(dayDate);
                       }
                     }}
                     disabled={!day}
                     className={`
                       h-14 w-14 p-0 rounded-md relative w-full
                       ${isSelected ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
+                      ${isToday && !isSelected ? 'bg-gray-800' : ''}
                       ${!day ? 'invisible' : ''}
                     `}
                   >
@@ -168,7 +172,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                       <div className={`absolute bottom-2 w-1.5 h-1.5 ${isSelected ? 'bg-black' : 'bg-white'} rounded-full`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedDate(new Date(displayDate.getFullYear(), displayDate.getMonth(), day));
+                          if (dayDate) setSelectedDate(dayDate);
                           setDialogEvent(events[day] || null)
                         }}
                       ></div>
@@ -187,84 +191,60 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
 const getEventLayouts = (dayEvents: Event[]): LaidOutEvent[] => {
   if (!dayEvents || dayEvents.length === 0) return [];
 
-  const sortedEvents = [...dayEvents].sort((a, b) => a.startHour - b.startHour || a.endHour - b.endHour);
-
-  const layouts: (Event & { cols: number; col: number })[] = [];
-  
-  for (const event of sortedEvents) {
-    let col = 0;
-    while(true) {
-        const conflictingEvent = layouts.find(e => e.col === col && event.startHour < e.endHour && event.endHour > e.startHour);
-        if (conflictingEvent) {
-            col++;
-            continue;
-        }
-        break;
-    }
-    layouts.push({ ...event, col, cols: 0 });
-  }
-
-  const findConflicts = (event: Event, allEvents: Event[]) => {
-    return allEvents.filter(e => e !== event && event.startHour < e.endHour && event.endHour > e.startHour);
-  }
+  const sortedEvents = [...dayEvents].sort((a, b) => a.startHour - b.startHour || b.endHour - a.endHour);
 
   const groups: Event[][] = [];
-  const processed = new Set<Event>();
+  const visited = new Set<Event>();
 
   for (const event of sortedEvents) {
-    if (processed.has(event)) continue;
-    const group = [event];
-    processed.add(event);
-    const queue = findConflicts(event, sortedEvents);
-    while (queue.length > 0) {
-      const nextEvent = queue.shift()!;
-      if (processed.has(nextEvent)) continue;
-      processed.add(nextEvent);
-      group.push(nextEvent);
-      findConflicts(nextEvent, sortedEvents).forEach(conflict => {
-        if (!processed.has(conflict)) {
-          queue.push(conflict);
-        }
-      });
-    }
-    groups.push(group);
+      if (visited.has(event)) continue;
+      const group: Event[] = [];
+      const queue = [event];
+      visited.add(event);
+      while(queue.length > 0) {
+          const current = queue.shift()!;
+          group.push(current);
+          for (const other of sortedEvents) {
+              if (visited.has(other)) continue;
+              if (current.startHour < other.endHour && current.endHour > other.startHour) {
+                  visited.add(other);
+                  queue.push(other);
+              }
+          }
+      }
+      groups.push(group);
   }
 
-  return sortedEvents.map(event => {
-    const group = groups.find(g => g.includes(event))!;
-    const columns: Event[][] = [];
-    group.sort((a, b) => a.startHour - b.startHour).forEach(e => {
-        let placed = false;
-        for (const col of columns) {
-            if (col[col.length - 1].endHour <= e.startHour) {
-                col.push(e);
-                placed = true;
-                break;
-            }
-        }
-        if (!placed) {
-            columns.push([e]);
-        }
-    });
+  const layouts: LaidOutEvent[] = [];
+  for (const group of groups) {
+      const columns: Event[][] = [];
+      group.sort((a,b) => a.startHour - b.startHour);
+      for(const event of group) {
+          let placed = false;
+          for(const col of columns) {
+              if (col[col.length-1].endHour <= event.startHour) {
+                  col.push(event);
+                  placed = true;
+                  break;
+              }
+          }
+          if (!placed) {
+              columns.push([event]);
+          }
+      }
 
-    const numColumns = columns.length;
-    let colIndex = -1;
-    for(let i=0; i<columns.length; i++) {
-        if (columns[i].includes(event)) {
-            colIndex = i;
-            break;
-        }
-    }
+      for (let i = 0; i < columns.length; i++) {
+          for (const event of columns[i]) {
+              layouts.push({
+                  ...event,
+                  width: (100 / columns.length),
+                  left: i * (100 / columns.length)
+              });
+          }
+      }
+  }
 
-    const width = 98 / numColumns;
-    const left = (colIndex * (100 / numColumns)) + 1;
-
-    return {
-      ...event,
-      left: left,
-      width: width,
-    };
-  });
+  return layouts;
 };
 
 
@@ -275,18 +255,13 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
   const daysInMonth = getDaysInMonth(displayDate);
   const miniCalendarDays = [...Array(firstDayOfMonth).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
 
-  const startOfWeek = new Date(selectedDate || new Date());
-  startOfWeek.setDate(startOfWeek.getDate() - getDay(startOfWeek));
-  const weekDays = Array.from({length: 7}, (_, i) => {
-    const day = new Date(startOfWeek);
-    day.setDate(day.getDate() + i);
-    return day;
-  });
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
+  const weekDays = Array.from({length: 7}, (_, i) => addDays(weekStart, i));
 
   const timeSlots = Array.from({ length: 15 }, (_, i) => `${(i + 3).toString().padStart(2, '0')}:00`);
   
-  const showEvents = selectedDate ? (selectedDate.getFullYear() === 2025 && selectedDate.getMonth() === 6) : false;
-  const selectedDayEvents = showEvents && selectedDate && isSameMonth(selectedDate, displayDate) ? events[getDate(selectedDate)] : [];
+  const showEvents = selectedDate.getFullYear() === 2025 && selectedDate.getMonth() === 6;
+  const selectedDayEvents = showEvents && isSameMonth(selectedDate, displayDate) ? events[getDate(selectedDate)] : [];
 
   const gridStartHour = 3;
   const totalHoursInGrid = 15;
@@ -298,8 +273,8 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
     yellow: 'bg-yellow-500/20 border-yellow-500/50 hover:bg-yellow-500/30 transition-colors',
   };
 
-  const handlePrevWeek = () => setSelectedDate(subMonths(selectedDate || new Date(), 7));
-  const handleNextWeek = () => setSelectedDate(addMonths(selectedDate || new Date(), 7));
+  const handlePrevWeek = () => setSelectedDate(subDays(selectedDate, 7));
+  const handleNextWeek = () => setSelectedDate(addDays(selectedDate, 7));
   const handlePrevMonth = () => setDisplayDate(subMonths(displayDate, 1));
   const handleNextMonth = () => setDisplayDate(addMonths(displayDate, 1));
 
@@ -359,7 +334,8 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
             </div>
             <div className="grid grid-cols-7 gap-1">
               {miniCalendarDays.map((day, index) => {
-                 const isSelected = day && selectedDate ? isSameDay(selectedDate, new Date(displayDate.getFullYear(), displayDate.getMonth(), day)) : false;
+                 const dayDate = day ? new Date(displayDate.getFullYear(), displayDate.getMonth(), day) : null;
+                 const isSelected = dayDate && isSameDay(selectedDate, dayDate);
                  return (
                  <motion.div 
                     key={index} 
@@ -367,7 +343,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                 >
-                    <Button variant={isSelected ? 'default' : 'ghost'} onClick={() => day && setSelectedDate(new Date(displayDate.getFullYear(), displayDate.getMonth(), day))} disabled={!day}
+                    <Button variant={isSelected ? 'default' : 'ghost'} onClick={() => dayDate && setSelectedDate(dayDate)} disabled={!day}
                       className={`h-8 w-8 p-0 rounded-md relative text-xs w-full ${!day ? 'invisible' : ''} ${isSelected ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}`}>
                       {day}
                     </Button>
@@ -412,15 +388,15 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
                 {timeSlots.map(time => <div key={time} className="flex-1 -mt-2 pt-2">{time}</div>)}
               </div>
               <div className="flex-1 flex">
-                {weekDays.map((day, dayIndex) => {
+                {weekDays.map((day) => {
                    const dayEvents = (day.getFullYear() === 2025 && day.getMonth() === 6 && events[day.getDate()]) || [];
                    const filteredEvents = dayEvents.filter(event => event.startHour >= gridStartHour);
                    const laidOutEvents = getEventLayouts(filteredEvents);
                    return (
                       <div key={day.toString()} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
-                        {timeSlots.map((time, index) => <div key={index} className="flex-1 border-b border-gray-700/50"></div>)}
+                        {timeSlots.map((_, index) => <div key={index} className="flex-1 border-b border-gray-700/50"></div>)}
                         <AnimatePresence>
-                        {laidOutEvents.map((event, eventIndex) => {
+                        {laidOutEvents.map((event) => {
                            const top = ((event.startHour - gridStartHour) / totalHoursInGrid) * 100;
                            const height = ((event.endHour - event.startHour) / totalHoursInGrid) * 100;
                            
@@ -433,17 +409,21 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
                                exit={{ opacity: 0, scale: 0.9 }}
                                whileHover={{ scale: 1.05, zIndex: 10, shadow: 'lg' }}
                                transition={{ duration: 0.2 }}
-                               className="absolute cursor-pointer p-1"
+                               className="absolute cursor-pointer p-0.5"
                                style={{ 
                                  top: `${top}%`, 
                                  height: `${height}%`,
                                  left: `${event.left}%`,
-                                 width: `${event.width}%`,
+                                 width: `calc(${event.width}% - 2px)`,
+                                 marginLeft: '1px',
                                 }}
-                                onClick={() => setDialogEvent(events[day.getDate()])}
+                                onClick={() => {
+                                  setSelectedDate(day);
+                                  setDialogEvent(events[day.getDate()])
+                                }}
                               >
                                <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col border ${eventColorClasses[event.color as keyof typeof eventColorClasses]}`}>
-                                 <span className="font-bold">{event.title}</span>
+                                 <span className="font-bold truncate">{event.title}</span>
                                  <span className='truncate'>{event.details}</span>
                                </div>
                              </motion.div>
@@ -467,7 +447,7 @@ export default function CalendarPage() {
   const [view, setView] = useState<'month' | 'week'>('month');
   const [dialogEvent, setDialogEvent] = useState<Event[] | null>(null);
   const [displayDate, setDisplayDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [greeting, setGreeting] = useState('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   
@@ -529,6 +509,14 @@ export default function CalendarPage() {
     }
   }, [selectedDate]);
 
+  useEffect(() => {
+    // When switching to week view, if the selected date is not in the currently
+    // displayed month in the mini-calendar, update the display month.
+    if (view === 'week' && !isSameMonth(selectedDate, displayDate)) {
+      setDisplayDate(selectedDate);
+    }
+  }, [selectedDate, view, displayDate]);
+
   const weatherIconMap = {
     Sun: <Sun className="w-5 h-5 text-yellow-400" />,
     Cloud: <Cloud className="w-5 h-5 text-gray-400" />,
@@ -547,7 +535,7 @@ export default function CalendarPage() {
   const viewProps = { events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate };
 
   return (
-    <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body relative ${view === 'month' ? 'p-4 pt-12 items-center' : 'p-2 md:p-4'}`}>
+    <div className={`bg-[#111111] text-white min-h-screen flex flex-col items-center font-body ${view === 'month' ? 'p-4 pt-12' : 'p-2 md:p-4 w-full'}`}>
         {view === 'month' && (
         <motion.div
           layout
@@ -591,7 +579,7 @@ export default function CalendarPage() {
           ) : (
             <WeekView key="week" {...viewProps} />
           )}
-        </AnimatePresence>
+      </AnimatePresence>
       <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
         <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50">
           {dialogEvent && dialogEvent.length > 0 && (
@@ -616,10 +604,9 @@ export default function CalendarPage() {
           )}
         </DialogContent>
       </Dialog>
-      <div className="absolute bottom-4 right-4">
+      <div className="mt-8">
         <Button variant="outline" size="sm">Admin Login</Button>
       </div>
     </div>
   );
 }
-
