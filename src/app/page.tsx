@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -18,8 +18,13 @@ import {
   CalendarDays,
   Columns3,
   Clock,
+  Sun,
+  Cloud,
+  CloudRain,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getWeatherForDay } from '@/services/weather';
+import type { WeatherData } from '@/services/weather';
 
 interface Event {
   title: string;
@@ -47,6 +52,32 @@ interface ViewProps {
 
 const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
   const [selectedDay, setSelectedDay] = useState<number | null>(1);
+  const [greeting, setGreeting] =useState('');
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      setGreeting('Good morning');
+    } else if (hour < 18) {
+      setGreeting('Good afternoon');
+    } else {
+      setGreeting('Good evening');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedDay) {
+      setWeather(null); // Clear previous weather
+      getWeatherForDay(selectedDay).then(setWeather);
+    }
+  }, [selectedDay]);
+
+  const weatherIconMap = {
+    Sun: <Sun className="w-5 h-5 text-yellow-400" />,
+    Cloud: <Cloud className="w-5 h-5 text-gray-400" />,
+    CloudRain: <CloudRain className="w-5 h-5 text-blue-400" />,
+  };
 
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const calendarDays = [
@@ -68,8 +99,8 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
         <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-8">
           <div className="w-full md:w-1/3 flex flex-col">
             <div className='space-y-4 flex-grow'>
-              <h1 className="text-2xl font-bold">Community Events</h1>
-              <p className="text-gray-400">Upcoming events in our community.</p>
+              <h1 className="text-2xl font-bold">{greeting}</h1>
+              <p className="text-gray-400">Here are the upcoming events in our community.</p>
               <Separator className="bg-gray-700/50" />
               <AnimatePresence mode="wait">
                 <motion.div
@@ -96,6 +127,27 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                   )}
                 </motion.div>
               </AnimatePresence>
+               {weather ? (
+                <motion.div
+                  key={selectedDay}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Separator className="bg-gray-700/50 my-4" />
+                  <h2 className="font-semibold mb-2">Weather for July {selectedDay}</h2>
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    {weatherIconMap[weather.icon]}
+                    <span>{weather.temp}°F, {weather.condition}</span>
+                  </div>
+                </motion.div>
+               ) : selectedDay && (
+                <div>
+                  <Separator className="bg-gray-700/50 my-4" />
+                  <p className="text-gray-400 text-sm">Loading weather...</p>
+                </div>
+               )}
             </div>
 
             <div className="flex items-center justify-end gap-2 mt-auto pt-4">
@@ -137,12 +189,9 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                   <Button
                     variant={day === selectedDay ? 'default' : 'ghost'}
                     onClick={() => {
-                      if (day && events[day]) {
+                      if (day) {
                         setSelectedDay(day);
-                        setDialogEvent(events[day]);
-                      } else if (day) {
-                        setSelectedDay(day);
-                        setDialogEvent(null);
+                        setDialogEvent(events[day] || null);
                       }
                     }}
                     disabled={!day}
@@ -491,22 +540,22 @@ export default function CalendarPage() {
           )}
         </AnimatePresence>
       <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
-        <DialogContent className="bg-background text-foreground border-border">
+        <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50">
           {dialogEvent && dialogEvent.length > 0 && (
             <>
               <DialogHeader>
                 <DialogTitle>Events for the day</DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-gray-400">
                   All scheduled events are listed below.
                 </DialogDescription>
               </DialogHeader>
               <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-4 -mr-4">
                 {dialogEvent.map((event, index) => (
-                  <div key={index} className="space-y-1 border-b border-border pb-4 last:border-b-0 last:pb-0">
+                  <div key={index} className="space-y-1 border-b border-gray-700/50 pb-4 last:border-b-0 last:pb-0">
                     <h3 className="font-semibold text-lg">{event.title}</h3>
-                    <p className="text-sm text-muted-foreground">{event.details}</p>
+                    <p className="text-sm text-gray-400">{event.details}</p>
                     <p className="text-sm"><strong>Time:</strong> {formatTime(event.startHour)} - {formatTime(event.endHour)}</p>
-                    <p className="text-sm text-muted-foreground mt-1">A detailed description of the event would go here. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <p className="text-sm text-gray-400 mt-1">A detailed description of the event would go here. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
                   </div>
                 ))}
               </div>
@@ -520,5 +569,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
