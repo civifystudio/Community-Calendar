@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
-  // Check if the environment variables are set. This is a crucial first step.
+  // This check is the most important part. It verifies if the environment variables are loaded.
   const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -36,21 +36,18 @@ export default function LoginPage() {
       });
 
       if (signInError) {
-        // This handles incorrect email/password errors from Supabase.
         setError(signInError.message);
         setLoading(false);
         return;
       }
 
       if (data.user) {
-          // After a successful login, check if the user is in the admin_emails table.
           const isAdmin = await isAdminUser();
           if (isAdmin) {
               router.push('/');
               router.refresh(); 
               return;
           } else {
-              // If they are not an admin, sign them out immediately.
               await supabase.auth.signOut();
               setError('Access denied. You are not an administrator.');
           }
@@ -58,15 +55,15 @@ export default function LoginPage() {
           setError("Sign-in successful, but user data could not be retrieved.");
       }
     } catch (e) {
-      // This catch block handles network errors, like the "Failed to fetch" error.
       console.error(e);
+      // This more specific error message helps diagnose the "Failed to fetch" issue.
       setError("Could not connect to the server. Please ensure your Supabase credentials are correct in .env.local and that you have restarted the application server.");
     }
 
     setLoading(false);
   };
   
-  // If Supabase is not configured, show a helpful message instead of the login form.
+  // If Supabase is not configured, we show a very explicit error message and hide the form.
   if (!isSupabaseConfigured) {
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
@@ -78,17 +75,17 @@ export default function LoginPage() {
                 <CardContent>
                     <Alert variant="destructive">
                         <Terminal className="h-4 w-4" />
-                        <AlertTitle>Missing Environment Variables</AlertTitle>
+                        <AlertTitle>Action Required: Missing Environment Variables</AlertTitle>
                         <AlertDescription>
-                            <p>Your Supabase URL and Key are not set.</p>
-                            <p className="mt-2">Please ensure you have renamed the <strong>.env.local.example</strong> file to <strong>.env.local</strong>, filled it with your credentials, and then <strong>restarted the development server</strong>.</p>
+                            <p className="font-bold">Your application cannot connect to Supabase.</p>
+                            <p className="mt-2">This is almost always because the environment variables are not loaded.</p>
+                            <ol className="list-decimal list-inside mt-4 space-y-2">
+                                <li>Find the file named <strong>.env.local.example</strong> in your project.</li>
+                                <li>Rename it to <strong>.env.local</strong></li>
+                                <li className="font-bold text-lg">You must restart the development server for this change to take effect.</li>
+                            </ol>
                         </AlertDescription>
                     </Alert>
-                    <div className="flex flex-col space-y-2 pt-4">
-                        <Button asChild variant="link" className="w-full text-gray-400">
-                           <Link href="/">Back to Calendar</Link>
-                        </Button>
-                    </div>
                 </CardContent>
             </Card>
         </div>
