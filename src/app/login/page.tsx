@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import Link from 'next/link';
+import { isAdminUser } from '@/app/actions';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,28 +37,18 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-        // After successful sign-in, check if the user is in the 'admins' table.
-        const { data: adminRecord, error: adminError } = await supabase
-          .from('admins')
-          .select('user_id')
-          .eq('user_id', data.user.id)
-          .single();
+        // After successful sign-in, check if the user is the designated admin.
+        const isAdmin = await isAdminUser();
 
-        // PGRST116 means no rows were found, which is expected for non-admins.
-        // We only care about other, actual errors.
-        if (adminError && adminError.code !== 'PGRST116') {
-            await supabase.auth.signOut();
-            setError('An error occurred while verifying your permissions.');
-        } else if (!adminRecord) {
-            // This is a valid user, but not an admin. Sign them out immediately.
-            await supabase.auth.signOut();
-            setError('Access denied. Only administrators can log in.');
-        } else {
-            // User is an admin, proceed to the main page.
+        if (isAdmin) {
+            // User is the admin, proceed to the main page.
             router.push('/');
             router.refresh(); 
-            setLoading(false);
             return;
+        } else {
+            // This is a valid user, but not an admin. Sign them out immediately.
+            await supabase.auth.signOut();
+            setError('Access denied. Only the designated administrator can log in.');
         }
     } else {
         setError("Sign-in successful, but user data could not be retrieved.");
