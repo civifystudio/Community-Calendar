@@ -1,66 +1,88 @@
 
 'use server';
 
+import { format } from 'date-fns';
+
 export interface WeatherData {
   temp: number;
   condition: 'Sunny' | 'Cloudy' | 'Rainy';
   icon: 'Sun' | 'Cloud' | 'CloudRain';
 }
 
-// Maps WMO weather codes to our app's simplified weather conditions.
+// Maps Tomorrow.io weather codes to our app's simplified weather conditions.
+// https://docs.tomorrow.io/reference/data-layers-weather-codes
 function mapWeatherCode(code: number): { condition: WeatherData['condition']; icon: WeatherData['icon'] } {
-  // Codes for rain/drizzle/showers/thunderstorm
-  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 99)) {
-    return { condition: 'Rainy', icon: 'CloudRain' };
+  const codeStr = code.toString();
+  switch (codeStr[0]) {
+    case '1': // Mostly weather related to sun/clouds
+      if (code === 1000) return { condition: 'Sunny', icon: 'Sun' };
+      return { condition: 'Cloudy', icon: 'Cloud' };
+    case '4': // Rain
+    case '6': // Freezing Rain
+    case '7': // Ice
+    case '8': // Thunderstorm
+      return { condition: 'Rainy', icon: 'CloudRain' };
+    case '2': // Fog
+    case '5': // Snow
+    default:
+      return { condition: 'Cloudy', icon: 'Cloud' };
   }
-  // Code for clear sky
-  if (code === 0) {
-    return { condition: 'Sunny', icon: 'Sun' };
-  }
-  // All other codes (clouds, fog, snow, etc.) are mapped to Cloudy
-  return { condition: 'Cloudy', icon: 'Cloud' };
 }
 
 export async function getWeatherForDay(dateObj: Date | null): Promise<WeatherData | null> {
   if (!dateObj) return null;
 
-  const year = dateObj.getFullYear();
-  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-  const day = dateObj.getDate().toString().padStart(2, '0');
+  // Arvin, CA coordinates
+  const location = '35.2,-118.83';
+  const apiKey = process.env.TOMORROW_API_KEY;
 
-  // Using Arvin, CA coordinates
-  const latitude = 35.2;
-  const longitude = -118.83;
+  if (!apiKey) {
+    console.error('Tomorrow.io API key is not set.');
+    return null;
+  }
   
-  const date = `${year}-${month}-${day}`;
+  const fields = 'weatherCode,temperature';
+  const units = 'imperial'; // Get temperature in Fahrenheit
+  const timesteps = '1d'; // Get daily forecast
   
-  // Using the free Open-Meteo API, which doesn't require an API key.
-  const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max&timezone=America/Los_Angeles&start_date=${date}&end_date=${date}`;
+  const apiUrl = `https://api.tomorrow.io/v4/weather/forecast?location=${location}&fields=${fields}&units=${units}&timesteps=${timesteps}&apikey=${apiKey}`;
 
   try {
-    const response = await fetch(apiUrl, { cache: 'no-store' }); // Fetch fresh data every time
+    const response = await fetch(apiUrl, { 
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' }
+    });
+    
     if (!response.ok) {
-      console.error('Failed to fetch weather data:', response.statusText);
+      console.error('Failed to fetch weather data:', response.status, response.statusText);
+      const errorBody = await response.text();
+      console.error('Error Body:', errorBody);
       return null;
     }
 
     const data = await response.json();
     
-    if (!data.daily || !data.daily.time || data.daily.time.length === 0) {
-        console.error('Invalid weather data received from API');
-        return null;
+    if (!data.timelines || !data.timelines.daily || data.timelines.daily.length === 0) {
+      console.error('Invalid weather data received from API:', data);
+      return null;
     }
 
-    const weatherCode = data.daily.weather_code[0];
-    const maxTemp = data.daily.temperature_2m_max[0];
+    // Find the forecast for the specific day requested
+    const requestedDateStr = format(dateObj, 'yyyy-MM-dd');
+    const dailyForecast = data.timelines.daily.find((day: any) => day.time.startsWith(requestedDateStr));
+
+    if (!dailyForecast) {
+      console.error(`No forecast found for date: ${requestedDateStr}`);
+      return null;
+    }
+
+    const weatherCode = dailyForecast.values.weatherCode;
+    const temp = dailyForecast.values.temperature;
     
     const { condition, icon } = mapWeatherCode(weatherCode);
-    
-    // The API returns temp in Celsius, converting to Fahrenheit.
-    const tempFahrenheit = Math.round(maxTemp * 9/5 + 32);
 
     return {
-      temp: tempFahrenheit,
+      temp: Math.round(temp),
       condition,
       icon,
     };
