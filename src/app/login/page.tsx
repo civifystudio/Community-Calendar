@@ -27,31 +27,37 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
+      }
 
-    if (data.user) {
-        // After a successful login, check if the user is in the admins table.
-        const isAdmin = await isAdminUser();
-        if (isAdmin) {
-            router.push('/');
-            router.refresh(); 
-            return;
-        } else {
-            // If they are not an admin, sign them out immediately.
-            await supabase.auth.signOut();
-            setError('Access denied. You are not an administrator.');
-        }
-    } else {
-        setError("Sign-in successful, but user data could not be retrieved.");
+      if (data.user) {
+          // After a successful login, check if the user is in the admins table.
+          const isAdmin = await isAdminUser();
+          if (isAdmin) {
+              router.push('/');
+              router.refresh(); 
+              return;
+          } else {
+              // If they are not an admin, sign them out immediately.
+              await supabase.auth.signOut();
+              setError('Access denied. You are not an administrator.');
+          }
+      } else {
+          setError("Sign-in successful, but user data could not be retrieved.");
+      }
+    } catch (e) {
+      // This catch block handles network errors, like the "Failed to fetch" error.
+      console.error(e);
+      setError("Could not connect to the server. Please ensure your Supabase credentials are correct in .env.local and restart the application.");
     }
 
     setLoading(false);
@@ -71,7 +77,7 @@ export default function LoginPage() {
                         <AlertTitle>Missing Environment Variables</AlertTitle>
                         <AlertDescription>
                             <p>Your Supabase URL and Key are not set.</p>
-                            <p className="mt-2">Please ensure you have renamed the <strong>.env.local.example</strong> file to <strong>.env.local</strong> and that it contains your project's credentials.</p>
+                            <p className="mt-2">Please ensure you have renamed the <strong>.env.local.example</strong> file to <strong>.env.local</strong>, filled it with your credentials, and then <strong>restarted the development server</strong>.</p>
                         </AlertDescription>
                     </Alert>
                     <div className="flex flex-col space-y-2 pt-4">
