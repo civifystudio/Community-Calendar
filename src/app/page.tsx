@@ -29,6 +29,11 @@ interface Event {
   color: string;
 }
 
+interface LaidOutEvent extends Event {
+  left: number;
+  width: number;
+}
+
 interface Events {
   [key: number]: Event[];
 }
@@ -62,7 +67,7 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
       <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
         <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-8">
           <div className="w-full md:w-1/3 flex flex-col">
-            <div className='space-y-4'>
+            <div className='space-y-4 flex-grow'>
               <h1 className="text-2xl font-bold">Community Events</h1>
               <p className="text-gray-400">Upcoming events in our community.</p>
               <Separator className="bg-gray-700/50" />
@@ -93,7 +98,7 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
               </AnimatePresence>
             </div>
 
-            <div className="flex items-center gap-2 mt-auto pt-4">
+            <div className="flex items-center justify-end gap-2 mt-auto pt-4">
               <span>Arvin, CA</span>
             </div>
           </div>
@@ -162,6 +167,90 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
   );
 };
 
+const getEventLayouts = (dayEvents: Event[]): LaidOutEvent[] => {
+  if (!dayEvents || dayEvents.length === 0) return [];
+
+  const sortedEvents = [...dayEvents].sort((a, b) => a.startHour - b.startHour || a.endHour - b.endHour);
+
+  const layouts: (Event & { cols: number; col: number })[] = [];
+  
+  for (const event of sortedEvents) {
+    let col = 0;
+    while(true) {
+        const conflictingEvent = layouts.find(e => e.col === col && event.startHour < e.endHour && event.endHour > e.startHour);
+        if (conflictingEvent) {
+            col++;
+            continue;
+        }
+        break;
+    }
+    layouts.push({ ...event, col, cols: 0 });
+  }
+
+  const findConflicts = (event: Event, allEvents: Event[]) => {
+    return allEvents.filter(e => e !== event && event.startHour < e.endHour && event.endHour > e.startHour);
+  }
+
+  const groups: Event[][] = [];
+  const processed = new Set<Event>();
+
+  for (const event of sortedEvents) {
+    if (processed.has(event)) continue;
+    const group = [event];
+    processed.add(event);
+    const queue = findConflicts(event, sortedEvents);
+    while (queue.length > 0) {
+      const nextEvent = queue.shift()!;
+      if (processed.has(nextEvent)) continue;
+      processed.add(nextEvent);
+      group.push(nextEvent);
+      findConflicts(nextEvent, sortedEvents).forEach(conflict => {
+        if (!processed.has(conflict)) {
+          queue.push(conflict);
+        }
+      });
+    }
+    groups.push(group);
+  }
+
+  return sortedEvents.map(event => {
+    const group = groups.find(g => g.includes(event))!;
+    const columns: Event[][] = [];
+    group.sort((a, b) => a.startHour - b.startHour).forEach(e => {
+        let placed = false;
+        for (const col of columns) {
+            if (col[col.length - 1].endHour <= e.startHour) {
+                col.push(e);
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) {
+            columns.push([e]);
+        }
+    });
+
+    const numColumns = columns.length;
+    let colIndex = -1;
+    for(let i=0; i<columns.length; i++) {
+        if (columns[i].includes(event)) {
+            colIndex = i;
+            break;
+        }
+    }
+
+    const width = 98 / numColumns;
+    const left = (colIndex * (100 / numColumns)) + 1;
+
+    return {
+      ...event,
+      left: left,
+      width: width,
+    };
+  });
+};
+
+
 function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
   const [miniCalendarSelectedDay, setMiniCalendarSelectedDay] = useState<number | null>(1);
   const miniCalendarDays = [...Array(2).fill(null), ...Array.from({ length: 31 }, (_, i) => i + 1)];
@@ -192,32 +281,34 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
       <div className="flex flex-col md:flex-row w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
         {/* Left Panel */}
         <div className="w-full md:w-[280px] p-4 flex flex-col border-b md:border-b-0 md:border-r border-gray-700/50 text-white">
-          <div className='space-y-4 flex-grow'>
-            <h1 className="text-xl font-bold">Community Events</h1>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={miniCalendarSelectedDay}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-2 text-sm text-gray-300 min-h-[60px]"
-                >
-                  {selectedEvents && selectedEvents.length > 0 ? (
-                    <div className="space-y-2">
-                    {selectedEvents.map((event, index) => (
-                    <div key={index}>
-                        <div className="flex items-center gap-2 font-semibold text-sm"><Clock className="size-4 shrink-0" /> {event.title}</div>
-                        <div className="flex items-center gap-2 pl-6 text-xs text-gray-400"><CalendarDays className="size-4 shrink-0" /> {event.details}</div>
-                    </div>
-                    ))}
-                    </div>
-                  ) : (
-                     <p className="text-gray-400">No event selected.</p>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-             <div className="flex items-center gap-2 mt-auto pt-4">
+          <div className='flex flex-col space-y-4 flex-grow'>
+            <div>
+              <h1 className="text-xl font-bold">Community Events</h1>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={miniCalendarSelectedDay}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-2 text-sm text-gray-300 min-h-[60px]"
+                  >
+                    {selectedEvents && selectedEvents.length > 0 ? (
+                      <div className="space-y-2">
+                      {selectedEvents.map((event, index) => (
+                      <div key={index}>
+                          <div className="flex items-center gap-2 font-semibold text-sm"><Clock className="size-4 shrink-0" /> {event.title}</div>
+                          <div className="flex items-center gap-2 pl-6 text-xs text-gray-400"><CalendarDays className="size-4 shrink-0" /> {event.details}</div>
+                      </div>
+                      ))}
+                      </div>
+                    ) : (
+                       <p className="text-gray-400">No event selected.</p>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+            </div>
+            <div className="flex items-center justify-end gap-2 mt-auto pt-4">
               <span>Arvin, CA</span>
             </div>
           </div>
@@ -289,30 +380,36 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
                 {weekDays.map((day, dayIndex) => {
                    const currentDayNumber = dayIndex + 1;
                    const dayEvents = (events[currentDayNumber] || []).filter(event => event.startHour >= gridStartHour);
+                   const laidOutEvents = getEventLayouts(dayEvents);
                    return (
                       <div key={day} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
                         {timeSlots.map((time, index) => <div key={index} className="flex-1 border-b border-gray-700/50"></div>)}
                         <AnimatePresence>
-                        {dayEvents.map((event, eventIndex) => {
+                        {laidOutEvents.map((event, eventIndex) => {
                            const top = ((event.startHour - gridStartHour) / totalHoursInGrid) * 100;
                            const height = ((event.endHour - event.startHour) / totalHoursInGrid) * 100;
                            
                            return (
                              <motion.div
-                               key={eventIndex}
+                               key={`${event.title}-${event.startHour}`}
                                layout
                                initial={{ opacity: 0, scale: 0.9 }}
                                animate={{ opacity: 1, scale: 1 }}
                                exit={{ opacity: 0, scale: 0.9 }}
                                whileHover={{ scale: 1.05, zIndex: 10, shadow: 'lg' }}
                                transition={{ duration: 0.2 }}
-                               className="absolute w-full px-1 cursor-pointer"
-                               style={{ top: `${top}%`, height: `${height}%` }}
-                               onClick={() => setDialogEvent(events[currentDayNumber])}
+                               className="absolute cursor-pointer"
+                               style={{ 
+                                 top: `${top}%`, 
+                                 height: `${height}%`,
+                                 left: `${event.left}%`,
+                                 width: `${event.width}%`,
+                                }}
+                                onClick={() => setDialogEvent(events[currentDayNumber])}
                               >
                                <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col border ${eventColorClasses[event.color as keyof typeof eventColorClasses]}`}>
                                  <span className="font-bold">{event.title}</span>
-                                 <span>{event.details}</span>
+                                 <span className='truncate'>{event.details}</span>
                                </div>
                              </motion.div>
                            )
@@ -378,11 +475,14 @@ export default function CalendarPage() {
   const formatTime = (hour: number) => {
     const h = Math.floor(hour);
     const m = Math.round((hour - h) * 60);
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    const minutes = m.toString().padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const formattedHour = h % 12 || 12;
+    return `${formattedHour}:${minutes} ${ampm}`;
   };
 
   return (
-    <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body ${view === 'month' ? 'p-4 items-center justify-center' : 'p-2 md:p-4'}`}>
+    <div className={`bg-[#111111] text-white h-screen flex flex-col font-body relative ${view === 'month' ? 'p-4 pt-12 items-center' : 'p-2 md:p-4'}`}>
         <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" events={events} view={view} setView={setView} setDialogEvent={setDialogEvent} />
@@ -391,22 +491,22 @@ export default function CalendarPage() {
           )}
         </AnimatePresence>
       <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
-        <DialogContent className="bg-orange-900 text-orange-50 border-orange-800">
+        <DialogContent className="bg-background text-foreground border-border">
           {dialogEvent && dialogEvent.length > 0 && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-orange-100">Events for the day</DialogTitle>
-                <DialogDescription className="text-orange-300">
+                <DialogTitle>Events for the day</DialogTitle>
+                <DialogDescription>
                   All scheduled events are listed below.
                 </DialogDescription>
               </DialogHeader>
               <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-4 -mr-4">
                 {dialogEvent.map((event, index) => (
-                  <div key={index} className="space-y-1 border-b border-orange-800 pb-4 last:border-b-0 last:pb-0">
-                    <h3 className="font-semibold text-lg text-orange-100">{event.title}</h3>
-                    <p className="text-sm text-orange-200">{event.details}</p>
+                  <div key={index} className="space-y-1 border-b border-border pb-4 last:border-b-0 last:pb-0">
+                    <h3 className="font-semibold text-lg">{event.title}</h3>
+                    <p className="text-sm text-muted-foreground">{event.details}</p>
                     <p className="text-sm"><strong>Time:</strong> {formatTime(event.startHour)} - {formatTime(event.endHour)}</p>
-                    <p className="text-sm text-orange-300 mt-1">A detailed description of the event would go here. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    <p className="text-sm text-muted-foreground mt-1">A detailed description of the event would go here. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
                   </div>
                 ))}
               </div>
@@ -414,6 +514,11 @@ export default function CalendarPage() {
           )}
         </DialogContent>
       </Dialog>
+      <div className="absolute bottom-4 right-4">
+        <Button variant="outline" size="sm">Admin Login</Button>
+      </div>
     </div>
   );
 }
+
+    
