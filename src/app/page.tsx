@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +16,8 @@ import {
 } from 'lucide-react';
 
 export default function CalendarPage() {
+  const [selectedDay, setSelectedDay] = useState<number | null>(1);
+
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   // July 2025 starts on a Tuesday. So we have 2 empty spots for Sun and Mon.
   const calendarDays = [
@@ -23,6 +28,29 @@ export default function CalendarPage() {
   const timeSlots = [
     '20:30', '21:00', '21:30', '22:00', '22:30', '23:00', '23:30'
   ];
+
+  const events: { [key: number]: { title: string; details: string } } = {
+    1: {
+      title: "Farmer's Market",
+      details: "Every Saturday, 8am - 12pm",
+    },
+    7: {
+      title: "Library Book Club",
+      details: "First Tuesday of the month, 6pm",
+    },
+    19: {
+      title: "Park Cleanup Day",
+      details: "July 19th, 9am",
+    },
+  };
+
+  const selectedEvent = selectedDay ? events[selectedDay] : null;
+
+  const getFormattedDate = (day: number | null) => {
+    if (!day) return '';
+    const date = new Date(2025, 6, day); // July is month 6
+    return date.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit' }).replace(',', '');
+  };
 
   return (
     <div className="bg-[#111111] text-white min-h-screen flex flex-col items-center justify-center p-4 font-body">
@@ -51,19 +79,17 @@ export default function CalendarPage() {
               <h1 className="text-2xl font-bold">Community Events</h1>
               <p className="text-gray-400">Upcoming events in our community.</p>
               <Separator className="bg-gray-700/50" />
-              <div className="space-y-4 text-sm text-gray-300">
-                <div>
-                  <p className="font-semibold">Farmer's Market</p>
-                  <p className="text-gray-400 text-xs">Every Saturday, 8am - 12pm</p>
-                </div>
-                 <div>
-                  <p className="font-semibold">Library Book Club</p>
-                  <p className="text-gray-400 text-xs">First Tuesday of the month, 6pm</p>
-                </div>
-                 <div>
-                  <p className="font-semibold">Park Cleanup Day</p>
-                  <p className="text-gray-400 text-xs">July 19th, 9am</p>
-                </div>
+              <div className="space-y-4 text-sm text-gray-300 min-h-[100px]">
+                {selectedEvent ? (
+                  <div>
+                    <p className="font-semibold">{selectedEvent.title}</p>
+                    <p className="text-gray-400 text-xs">{selectedEvent.details}</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-400">No event scheduled for this day.</p>
+                  </div>
+                )}
               </div>
               <Separator className="bg-gray-700/50" />
               <div className="flex items-center gap-2 cursor-pointer">
@@ -90,15 +116,19 @@ export default function CalendarPage() {
                 {calendarDays.map((day, index) => (
                   <Button
                     key={index}
-                    variant={day === 1 ? 'default' : 'ghost'}
+                    variant={day === selectedDay ? 'default' : 'ghost'}
+                    onClick={() => day && setSelectedDay(day)}
+                    disabled={!day}
                     className={`
-                      h-8 w-8 p-0 rounded-md
-                      ${day === 1 ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
+                      h-8 w-8 p-0 rounded-md relative
+                      ${day === selectedDay ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
                       ${!day ? 'invisible' : ''}
                     `}
                   >
                     {day}
-                    {day === 1 && <div className="absolute bottom-1.5 w-1 h-1 bg-black rounded-full"></div>}
+                    {day && events[day] && (
+                      <div className={`absolute bottom-1.5 w-1 h-1 ${day === selectedDay ? 'bg-black' : 'bg-white'} rounded-full`}></div>
+                    )}
                   </Button>
                 ))}
               </div>
@@ -106,7 +136,7 @@ export default function CalendarPage() {
 
             <div className="w-[200px] pl-8 border-l border-gray-700/50">
               <div className="flex items-center justify-between mb-4">
-                <p className="font-semibold">Tue 01</p>
+                <p className="font-semibold">{getFormattedDate(selectedDay)}</p>
                 <div className="flex items-center bg-[#111111] rounded-md p-0.5 text-xs">
                   <Button variant="ghost" size="sm" className="h-6 px-2 bg-gray-700/50 text-white hover:bg-gray-600">12h</Button>
                   <Button variant="ghost" size="sm" className="h-6 px-2 text-gray-400 hover:text-white">24h</Button>
