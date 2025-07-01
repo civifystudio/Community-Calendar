@@ -186,7 +186,7 @@ const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="flex w-full max-w-full"
+      className="flex w-full max-w-full h-full"
     >
       <div className="flex flex-col md:flex-row w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden h-full">
         {/* Left Panel */}
