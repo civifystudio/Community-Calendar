@@ -284,12 +284,12 @@ const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
               <div className="w-16 text-xs text-gray-500 text-right pr-2 flex flex-col">
                 {timeSlots.map(time => <div key={time} className="flex-1 -mt-2 pt-2">{time}</div>)}
               </div>
-              <div className="flex-1 grid grid-cols-7">
+              <div className="flex-1 flex">
                 {weekDays.map((day, dayIndex) => {
                    const currentDayNumber = dayIndex + 1;
                    const dayEvents = (events[currentDayNumber] || []).filter(event => event.startHour >= gridStartHour);
                    return (
-                      <div key={day} className="border-l border-gray-700/50 relative flex flex-col">
+                      <div key={day} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
                         {timeSlots.map(time => <div key={time} className="flex-1 border-b border-gray-700/50"></div>)}
                         <AnimatePresence>
                         {dayEvents.map((event, eventIndex) => {
