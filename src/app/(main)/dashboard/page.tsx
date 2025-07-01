@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import {
   BookOpenCheck,
-  CodeXml,
   Layers3,
   Library,
   Plug,
@@ -29,12 +28,6 @@ const features = [
     title: 'Component Library',
     description: 'Browse pre-built, customizable components and templates.',
     href: '/components',
-  },
-  {
-    icon: CodeXml,
-    title: 'AI Code Generation',
-    description: 'Generate boilerplate for API routes and data fetching.',
-    href: '/code-generation',
   },
   {
     icon: BookOpenCheck,

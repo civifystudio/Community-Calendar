@@ -1,4 +1,3 @@
-import ClientPage from './client-page';
 import {
   Card,
   CardContent,
@@ -14,11 +13,11 @@ export default function CodeGenerationPage() {
         <CardHeader>
           <CardTitle className="font-headline text-2xl">AI Code Generation</CardTitle>
           <CardDescription>
-            Use AI to generate boilerplate code for your Next.js application.
+            This feature is currently disabled.
           </CardDescription>
         </CardHeader>
         <CardContent>
-           <ClientPage />
+           <p>AI code generation has been turned off for this project.</p>
         </CardContent>
       </Card>
     </main>

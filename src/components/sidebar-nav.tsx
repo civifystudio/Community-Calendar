@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BookOpenCheck,
-  CodeXml,
   LayoutDashboard,
   Library,
   Layers3,
@@ -18,7 +17,6 @@ const links = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/scaffolding', label: 'Scaffolding', icon: Layers3 },
   { href: '/components', label: 'Components', icon: Library },
-  { href: '/code-generation', label: 'Code Generation', icon: CodeXml },
   { href: '/guidance', label: 'Guidance', icon: BookOpenCheck },
   { href: '/plugins', label: 'Plugins', icon: Plug },
   { href: '/configurations', label: 'Configurations', icon: Settings2 },
