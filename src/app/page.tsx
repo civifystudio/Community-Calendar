@@ -56,9 +56,9 @@ export default function CalendarPage() {
       </header>
 
       <main className="w-full max-w-4xl mx-auto">
-        <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl p-6">
-          <CardContent className="p-0 flex gap-8">
-            <div className="w-1/3 space-y-4">
+        <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl">
+          <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-8">
+            <div className="w-full md:w-1/3 space-y-4">
               <h1 className="text-2xl font-bold">Community Events</h1>
               <p className="text-gray-400">Upcoming events in our community.</p>
               <Separator className="bg-gray-700/50" />
@@ -89,10 +89,10 @@ export default function CalendarPage() {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="grid grid-cols-7 gap-2 text-center text-xs text-gray-400 mb-2">
+              <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-xs text-gray-400 mb-2">
                 {days.map((day) => <div key={day}>{day}</div>)}
               </div>
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-1 md:gap-2">
                 {calendarDays.map((day, index) => (
                   <Button
                     key={index}
@@ -100,7 +100,7 @@ export default function CalendarPage() {
                     onClick={() => day && setSelectedDay(day)}
                     disabled={!day}
                     className={`
-                      h-8 w-8 p-0 rounded-md relative
+                      h-7 w-7 p-0 rounded-md relative
                       ${day === selectedDay ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
                       ${!day ? 'invisible' : ''}
                     `}
