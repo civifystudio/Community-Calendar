@@ -673,7 +673,7 @@ export default function CalendarPage() {
             {editingEvent && (
                 <EventForm event={editingEvent} date={selectedDate} onSave={handleSaveEvent} onCancel={() => setIsFormOpen(false)} />
             )}
-             {editingEvent?.id && (
+             {isAdmin && editingEvent?.id && (
                 <Button variant="destructive" className="mt-4" onClick={() => handleDeleteEvent(editingEvent.id)}>
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Event
                 </Button>
