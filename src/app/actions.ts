@@ -29,7 +29,7 @@ async function verifyAdmin() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || user.email !== process.env.ADMIN_EMAIL) {
-        throw new Error('Unauthorized');
+        throw new Error('Unauthorized. Only the admin can perform this action.');
     }
     return user;
 }
