@@ -1,6 +1,7 @@
 
 'use client';
 
+import { Calendar } from "@/components/ui/calendar";
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
@@ -69,17 +70,20 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
     const [startHour, setStartHour] = useState(event?.start_hour || 9);
     const [endHour, setEndHour] = useState(event?.end_hour || 10);
     const [color, setColor] = useState<'green' | 'blue' | 'purple' | 'yellow'>(event?.color || 'blue');
+    const [selectedDate, setSelectedDate] = useState<Date>(date);
+    const [link, setLink] = useState(event?.link || '');
   
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       const eventData = {
         ...event,
-        date: format(date, 'yyyy-MM-dd'),
+        date: format(selectedDate, 'yyyy-MM-dd'),
         title,
         details,
         start_hour: Number(startHour),
         end_hour: Number(endHour),
         color,
+        link,
       };
       // Type guard to differentiate between add and update
       if ('id' in eventData && eventData.id) {
@@ -94,7 +98,7 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
       <form onSubmit={handleSubmit}>
         <DialogHeader>
           <DialogTitle>{event?.id ? 'Edit Event' : 'Add Event'}</DialogTitle>
-          <DialogDescription>Fill in the details for your event on {format(date, 'MMMM d, yyyy')}.</DialogDescription>
+          <DialogDescription>Fill in the details for your event on {format(selectedDate, 'MMMM d, yyyy')}.</DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
           <div className="space-y-2">
@@ -104,6 +108,19 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
           <div className="space-y-2">
             <Label htmlFor="details">Details</Label>
             <Textarea id="details" value={details} onChange={e => setDetails(e.target.value)} required className="bg-black/30 border-gray-600"/>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="date">Date</Label>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate as (date?: Date) => void}
+              className="rounded-md border bg-black/30 border-gray-600"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="link">Link</Label>
+            <Input id="link" type="url" value={link} onChange={e => setLink(e.target.value)} className="bg-black/30 border-gray-600"/>
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-2">
@@ -256,13 +273,12 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                   >
                     {day}
                     {day && events[day] && events[day].length > 0 && (
-                      <div className={`absolute bottom-2 w-1.5 h-1.5 ${isSelected ? 'bg-black' : 'bg-white'} rounded-full`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (dayDate) setSelectedDate(dayDate);
-                          setDialogEvent(events[day] || null)
-                        }}
-                      ></div>
+                      <div className="absolute bottom-2 left-0 right-0 flex flex-col items-start px-1">
+                        {events[day].slice(0, 3).map((event, index) => (
+                          <div key={index} className={`text-xs text-white ${isSelected ? 'text-black' : ''} truncate`}>{event.title}</div>
+                        ))}
+                        {events[day].length > 3 && <div className={`text-xs text-white ${isSelected ? 'text-black' : ''}`}>...</div>}
+                      </div>
                     )}
                   </Button>
                 </motion.div>
@@ -607,7 +623,7 @@ export default function CalendarPage() {
   const handleSaveEvent = async (eventData: CalendarEvent | Omit<CalendarEvent, 'id'>) => {
       try {
         if ('id' in eventData) {
-            await updateEvent(eventData);
+            await updateEvent(eventData as CalendarEvent);
             toast({ title: "Event updated successfully!" });
         } else {
             await addEvent(eventData);

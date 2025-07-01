@@ -45,7 +45,7 @@ export default function LoginPage() {
           const isAdmin = await isAdminUser();
           if (isAdmin) {
               router.push('/');
-              router.refresh(); 
+              router.refresh();
               return;
           } else {
               await supabase.auth.signOut();
@@ -54,7 +54,7 @@ export default function LoginPage() {
       } else {
           setError("Sign-in successful, but user data could not be retrieved.");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
       // This more specific error message helps diagnose the "Failed to fetch" issue.
       setError("Could not connect to the server. Please ensure your Supabase credentials are correct in .env.local and that you have restarted the application server.");
@@ -80,8 +80,8 @@ export default function LoginPage() {
                             <p className="font-bold">Your application cannot connect to Supabase.</p>
                             <p className="mt-2">This is almost always because the environment variables are not loaded.</p>
                             <ol className="list-decimal list-inside mt-4 space-y-2">
-                                <li>Find the file named <strong>.env.local.example</strong> in your project.</li>
-                                <li>Rename it to <strong>.env.local</strong></li>
+                                <li>Find or create a file named <strong>.env.local</strong> in your project's root directory.</li>
+                                <li>Add your Supabase URL and Key to this file.</li>
                                 <li className="font-bold text-lg">You must restart the development server for this change to take effect.</li>
                             </ol>
                         </AlertDescription>

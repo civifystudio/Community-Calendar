@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'NextBase',
-  description: 'The All-in-One Toolkit for Next.js Development',
+  title: 'Community Calendar',
+  description: 'Community events calendar',
 };
 
 export default function RootLayout({

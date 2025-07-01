@@ -12,6 +12,7 @@ export interface CalendarEvent {
   start_hour: number;
   end_hour: number;
   color: 'green' | 'blue' | 'purple' | 'yellow';
+  link?: string;
 }
 
 export async function getEvents() {
@@ -33,21 +34,20 @@ export async function isAdminUser(): Promise<boolean> {
     if (!user || !user.email) {
       return false;
     }
-    
-    // Check if the user's email exists in the admin_emails table.
-    const { data: admin, error } = await supabase
-      .from('admin_emails')
-      .select('email')
-      .eq('email', user.email)
-      .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = 'No rows found'
-        console.error('Error checking admin status:', error);
-        return false;
+    // Directly query the admin_emails table
+    const { data, error } = await supabase
+      .from('admin_emails')
+      .select('*')
+      .eq('email', user.email);
+
+    if (error) {
+      console.error('Error checking admin status:', error);
+      return false;
     }
-    
+
     // If a record was found, the user is an admin.
-    return !!admin;
+    return data && data.length > 0;
   } catch (error) {
     console.error("Error in isAdminUser:", error);
     return false;
@@ -62,12 +62,12 @@ export async function addEvent(event: Omit<CalendarEvent, 'id'>) {
       throw new Error('You must be an admin to add events.');
   }
   
-  const { error } = await supabase.from('events').insert([event]);
+  const { error } = await supabase.from('events').insert([{ ...event, link: event.link || null }]);
   
-  if (error) {
-    console.error('Error adding event:', error);
-    throw new Error('Failed to add event.');
-  }
+    if (error) {
+      console.error('Error adding event:', error);
+      throw new Error('Failed to add event.');
+    }
 
   revalidatePath('/');
 }
@@ -85,12 +85,12 @@ export async function updateEvent(event: CalendarEvent) {
 
   const { id, ...updateData } = event;
 
-  const { error } = await supabase.from('events').update(updateData).eq('id', id);
+  const { error } = await supabase.from('events').update({...updateData, link: updateData.link || null}).eq('id', id);
   
-  if (error) {
-    console.error('Error updating event:', error);
-    throw new Error('Failed to update event.');
-  }
+    if (error) {
+      console.error('Error updating event:', error);
+      throw new Error('Failed to update event.');
+    }
 
   revalidatePath('/');
 }
