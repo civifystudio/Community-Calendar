@@ -57,33 +57,6 @@ interface ViewProps {
 }
 
 const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate }: ViewProps) => {
-  const [greeting, setGreeting] =useState('');
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) {
-      setGreeting('Good morning');
-    } else if (hour < 18) {
-      setGreeting('Good afternoon');
-    } else {
-      setGreeting('Good evening');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedDate) {
-      setWeather(null); // Clear previous weather
-      getWeatherForDay(selectedDate).then(setWeather);
-    }
-  }, [selectedDate]);
-
-  const weatherIconMap = {
-    Sun: <Sun className="w-5 h-5 text-yellow-400" />,
-    Cloud: <Cloud className="w-5 h-5 text-gray-400" />,
-    CloudRain: <CloudRain className="w-5 h-5 text-blue-400" />,
-  };
-
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   
   const firstDayOfMonth = getDay(new Date(displayDate.getFullYear(), displayDate.getMonth(), 1));
@@ -108,27 +81,8 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
         <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-8">
           <div className="w-full md:w-1/3 flex flex-col">
             <div className='space-y-4 flex-grow'>
-              <h1 className="text-2xl font-bold">{greeting}</h1>
-              
-              <div className="min-h-[24px]">
-               {weather && selectedDate ? (
-                <motion.div
-                  key={selectedDate ? `weather-${selectedDate.toString()}` : 'weather-loading'}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex items-center gap-2 text-sm text-gray-300"
-                >
-                    {weatherIconMap[weather.icon]}
-                    <span>{weather.temp}°F, {weather.condition} on {format(selectedDate, 'MMMM d')}</span>
-                </motion.div>
-               ) : selectedDate && (
-                  <p className="text-gray-400 text-sm">Loading weather...</p>
-               )}
-              </div>
-
-              <Separator className="bg-gray-700/50" />
+               <h1 className="text-2xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, MMMM d') : 'Select a day'}</h1>
+               <Separator className="bg-gray-700/50" />
               
               <AnimatePresence mode="wait">
                 <motion.div
@@ -150,7 +104,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                     </div>
                   ) : (
                     <div>
-                      <p className="text-gray-400">No event scheduled for this day.</p>
+                      <p className="text-gray-400">{selectedDate ? 'No events scheduled for this day.' : 'Select a day to see events.'}</p>
                     </div>
                   )}
                 </motion.div>
@@ -514,6 +468,8 @@ export default function CalendarPage() {
   const [dialogEvent, setDialogEvent] = useState<Event[] | null>(null);
   const [displayDate, setDisplayDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [greeting, setGreeting] = useState('');
+  const [weather, setWeather] = useState<WeatherData | null>(null);
   
   const events: Events = {
     1: [
@@ -555,6 +511,30 @@ export default function CalendarPage() {
     }],
   };
 
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      setGreeting('Good morning');
+    } else if (hour < 18) {
+      setGreeting('Good afternoon');
+    } else {
+      setGreeting('Good evening');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedDate) {
+      setWeather(null); // Clear previous weather
+      getWeatherForDay(selectedDate).then(setWeather);
+    }
+  }, [selectedDate]);
+
+  const weatherIconMap = {
+    Sun: <Sun className="w-5 h-5 text-yellow-400" />,
+    Cloud: <Cloud className="w-5 h-5 text-gray-400" />,
+    CloudRain: <CloudRain className="w-5 h-5 text-blue-400" />,
+  };
+
   const formatTime = (hour: number) => {
     const h = Math.floor(hour);
     const m = Math.round((hour - h) * 60);
@@ -568,7 +548,44 @@ export default function CalendarPage() {
 
   return (
     <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body relative ${view === 'month' ? 'p-4 pt-12 items-center' : 'p-2 md:p-4'}`}>
-        <AnimatePresence mode="wait">
+        {view === 'month' && (
+        <motion.div
+          layout
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="w-full max-w-4xl mx-auto mb-6"
+        >
+          <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">{greeting}</h1>
+                <p className="text-sm text-gray-400">
+                  Here is your local forecast.
+                </p>
+              </div>
+              <div className="min-h-[24px] text-right">
+                {weather && selectedDate ? (
+                  <motion.div
+                    key={selectedDate ? `weather-${selectedDate.toString()}` : 'weather-loading'}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center gap-2 text-sm text-gray-300"
+                  >
+                    {weatherIconMap[weather.icon]}
+                    <span>{weather.temp}°F, {weather.condition}</span>
+                  </motion.div>
+                ) : selectedDate && (
+                  <p className="text-gray-400 text-sm">Loading weather...</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+      <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
           ) : (
@@ -605,3 +622,4 @@ export default function CalendarPage() {
     </div>
   );
 }
+
