@@ -35,7 +35,7 @@ export async function getWeatherForDay(day: number): Promise<WeatherData | null>
   const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max&timezone=America/Los_Angeles&start_date=${date}&end_date=${date}`;
 
   try {
-    const response = await fetch(apiUrl, { cache: 'force-cache' }); // Cache results for better performance
+    const response = await fetch(apiUrl, { cache: 'no-store' }); // Fetch fresh data every time
     if (!response.ok) {
       console.error('Failed to fetch weather data:', response.statusText);
       return null;
