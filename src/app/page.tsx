@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,13 +17,8 @@ import {
   CalendarDays,
   Columns3,
   Clock,
-  Sun,
-  Cloud,
-  CloudRain,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getWeatherFromAI } from '@/ai/flows/get-weather-flow';
-import type { WeatherData } from '@/ai/flows/get-weather-flow';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays } from 'date-fns';
 
 
@@ -109,10 +103,6 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                   )}
                 </motion.div>
               </AnimatePresence>
-            </div>
-
-            <div className="flex items-center justify-start gap-2 mt-auto pt-4">
-              <span>Arvin, CA</span>
             </div>
           </div>
 
@@ -316,9 +306,6 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
                   </motion.div>
                 </AnimatePresence>
             </div>
-            <div className="flex items-center justify-start gap-2 mt-auto pt-4">
-              <span>Arvin, CA</span>
-            </div>
           </div>
 
           <div className="mt-8">
@@ -448,8 +435,6 @@ export default function CalendarPage() {
   const [dialogEvent, setDialogEvent] = useState<Event[] | null>(null);
   const [displayDate, setDisplayDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [greeting, setGreeting] = useState('');
-  const [weather, setWeather] = useState<WeatherData | null>(null);
   
   const events: Events = {
     1: [
@@ -492,36 +477,12 @@ export default function CalendarPage() {
   };
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) {
-      setGreeting('Good morning');
-    } else if (hour < 18) {
-      setGreeting('Good afternoon');
-    } else {
-      setGreeting('Good evening');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedDate) {
-      setWeather(null); // Clear previous weather
-      getWeatherFromAI(selectedDate).then(setWeather);
-    }
-  }, [selectedDate]);
-
-  useEffect(() => {
     // When switching to week view, if the selected date is not in the currently
     // displayed month in the mini-calendar, update the display month.
     if (view === 'week' && !isSameMonth(selectedDate, displayDate)) {
       setDisplayDate(selectedDate);
     }
   }, [selectedDate, view, displayDate]);
-
-  const weatherIconMap = {
-    Sun: <Sun className="w-5 h-5 text-yellow-400" />,
-    Cloud: <Cloud className="w-5 h-5 text-gray-400" />,
-    CloudRain: <CloudRain className="w-5 h-5 text-blue-400" />,
-  };
 
   const formatTime = (hour: number) => {
     const h = Math.floor(hour);
@@ -535,44 +496,7 @@ export default function CalendarPage() {
   const viewProps = { events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate };
 
   return (
-    <div className={`bg-[#111111] text-white min-h-screen flex flex-col items-center font-body ${view === 'month' ? 'p-4 pt-12' : 'p-2 md:p-4 w-full'}`}>
-        {view === 'month' && (
-        <motion.div
-          layout
-          initial={{ opacity: 0, y: -20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="w-full max-w-4xl mx-auto mb-6"
-        >
-          <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">{greeting}</h1>
-                <p className="text-sm text-gray-400">
-                  Here is your local forecast.
-                </p>
-              </div>
-              <div className="min-h-[24px] text-right">
-                {weather && selectedDate ? (
-                  <motion.div
-                    key={selectedDate ? `weather-${selectedDate.toString()}` : 'weather-loading'}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex items-center gap-2 text-sm text-gray-300"
-                  >
-                    {weatherIconMap[weather.icon]}
-                    <span>{weather.temp}°F, {weather.condition}</span>
-                  </motion.div>
-                ) : selectedDate && (
-                  <p className="text-gray-400 text-sm">Loading weather...</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+    <div className={`bg-[#111111] text-white min-h-screen flex flex-col items-center justify-center font-body ${view === 'month' ? 'p-4 pt-12' : 'p-2 md:p-4 w-full'}`}>
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
