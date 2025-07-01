@@ -89,8 +89,7 @@ export default function CalendarPage() {
                   </div>
                 )}
               </div>
-              <Separator className="bg-gray-700/50" />
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pt-4">
                 <span>Arvin, CA</span>
               </div>
             </div>
