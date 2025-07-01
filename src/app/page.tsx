@@ -100,8 +100,27 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
           <div className="w-full md:w-1/3 flex flex-col">
             <div className='space-y-4 flex-grow'>
               <h1 className="text-2xl font-bold">{greeting}</h1>
-              <p className="text-gray-400">Here are the upcoming events in our community.</p>
+              
+              <div className="min-h-[24px]">
+               {weather ? (
+                <motion.div
+                  key={selectedDay ? `weather-${selectedDay}` : 'weather-loading'}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center gap-2 text-sm text-gray-300"
+                >
+                    {weatherIconMap[weather.icon]}
+                    <span>{weather.temp}°F, {weather.condition} on July {selectedDay}</span>
+                </motion.div>
+               ) : selectedDay && (
+                  <p className="text-gray-400 text-sm">Loading weather...</p>
+               )}
+              </div>
+
               <Separator className="bg-gray-700/50" />
+              
               <AnimatePresence mode="wait">
                 <motion.div
                   key={selectedDay}
@@ -127,27 +146,6 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                   )}
                 </motion.div>
               </AnimatePresence>
-               {weather ? (
-                <motion.div
-                  key={selectedDay}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Separator className="bg-gray-700/50 my-4" />
-                  <h2 className="font-semibold mb-2">Weather for July {selectedDay}</h2>
-                  <div className="flex items-center gap-2 text-sm text-gray-300">
-                    {weatherIconMap[weather.icon]}
-                    <span>{weather.temp}°F, {weather.condition}</span>
-                  </div>
-                </motion.div>
-               ) : selectedDay && (
-                <div>
-                  <Separator className="bg-gray-700/50 my-4" />
-                  <p className="text-gray-400 text-sm">Loading weather...</p>
-                </div>
-               )}
             </div>
 
             <div className="flex items-center justify-end gap-2 mt-auto pt-4">
@@ -191,7 +189,6 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                     onClick={() => {
                       if (day) {
                         setSelectedDay(day);
-                        setDialogEvent(events[day] || null);
                       }
                     }}
                     disabled={!day}
@@ -203,7 +200,12 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                   >
                     {day}
                     {day && events[day] && events[day].length > 0 && (
-                      <div className={`absolute bottom-2 w-1.5 h-1.5 ${day === selectedDay ? 'bg-black' : 'bg-white'} rounded-full`}></div>
+                      <div className={`absolute bottom-2 w-1.5 h-1.5 ${day === selectedDay ? 'bg-black' : 'bg-white'} rounded-full`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDialogEvent(events[day] || null)
+                        }}
+                      ></div>
                     )}
                   </Button>
                 </motion.div>
@@ -447,7 +449,7 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
                                exit={{ opacity: 0, scale: 0.9 }}
                                whileHover={{ scale: 1.05, zIndex: 10, shadow: 'lg' }}
                                transition={{ duration: 0.2 }}
-                               className="absolute cursor-pointer"
+                               className="absolute cursor-pointer p-1"
                                style={{ 
                                  top: `${top}%`, 
                                  height: `${height}%`,
