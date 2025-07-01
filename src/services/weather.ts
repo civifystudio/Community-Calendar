@@ -21,15 +21,18 @@ function mapWeatherCode(code: number): { condition: WeatherData['condition']; ic
   return { condition: 'Cloudy', icon: 'Cloud' };
 }
 
-export async function getWeatherForDay(day: number): Promise<WeatherData | null> {
-  if (!day || day < 1 || day > 31) return null;
+export async function getWeatherForDay(dateObj: Date | null): Promise<WeatherData | null> {
+  if (!dateObj) return null;
+
+  const year = dateObj.getFullYear();
+  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+  const day = dateObj.getDate().toString().padStart(2, '0');
 
   // Using Arvin, CA coordinates
   const latitude = 35.2;
   const longitude = -118.83;
   
-  // The calendar is set to July 2025
-  const date = `2025-07-${day.toString().padStart(2, '0')}`;
+  const date = `${year}-${month}-${day}`;
   
   // Using the free Open-Meteo API, which doesn't require an API key.
   const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max&timezone=America/Los_Angeles&start_date=${date}&end_date=${date}`;
@@ -53,7 +56,7 @@ export async function getWeatherForDay(day: number): Promise<WeatherData | null>
     
     const { condition, icon } = mapWeatherCode(weatherCode);
     
-    // The API returns temp in Celsius, converting to Fahrenheit for consistency with previous mock.
+    // The API returns temp in Celsius, converting to Fahrenheit.
     const tempFahrenheit = Math.round(maxTemp * 9/5 + 32);
 
     return {

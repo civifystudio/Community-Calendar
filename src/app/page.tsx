@@ -25,6 +25,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { getWeatherForDay } from '@/services/weather';
 import type { WeatherData } from '@/services/weather';
+import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate } from 'date-fns';
+
 
 interface Event {
   title: string;
@@ -48,10 +50,13 @@ interface ViewProps {
   view: 'month' | 'week';
   setView: React.Dispatch<React.SetStateAction<'month' | 'week'>>;
   setDialogEvent: (event: Event[] | null) => void;
+  displayDate: Date;
+  setDisplayDate: React.Dispatch<React.SetStateAction<Date>>;
+  selectedDate: Date | null;
+  setSelectedDate: React.Dispatch<React.SetStateAction<Date | null>>;
 }
 
-const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
-  const [selectedDay, setSelectedDay] = useState<number | null>(1);
+const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate }: ViewProps) => {
   const [greeting, setGreeting] =useState('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
 
@@ -67,11 +72,11 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
   }, []);
 
   useEffect(() => {
-    if (selectedDay) {
+    if (selectedDate) {
       setWeather(null); // Clear previous weather
-      getWeatherForDay(selectedDay).then(setWeather);
+      getWeatherForDay(selectedDate).then(setWeather);
     }
-  }, [selectedDay]);
+  }, [selectedDate]);
 
   const weatherIconMap = {
     Sun: <Sun className="w-5 h-5 text-yellow-400" />,
@@ -79,13 +84,17 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
     CloudRain: <CloudRain className="w-5 h-5 text-blue-400" />,
   };
 
-  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-  const calendarDays = [
-    ...Array(2).fill(null),
-    ...Array.from({ length: 31 }, (_, i) => i + 1),
-  ];
+  const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   
-  const selectedEvents = selectedDay ? events[selectedDay] : null;
+  const firstDayOfMonth = getDay(new Date(displayDate.getFullYear(), displayDate.getMonth(), 1));
+  const daysInMonth = getDaysInMonth(displayDate);
+  const calendarDays = [...Array(firstDayOfMonth).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  
+  const showEvents = displayDate.getFullYear() === 2025 && displayDate.getMonth() === 6; // July
+  const selectedDayEvents = showEvents && selectedDate && isSameMonth(selectedDate, displayDate) ? events[getDate(selectedDate)] : [];
+
+  const handlePrevMonth = () => setDisplayDate(subMonths(displayDate, 1));
+  const handleNextMonth = () => setDisplayDate(addMonths(displayDate, 1));
 
   return (
     <motion.div
@@ -102,9 +111,9 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
               <h1 className="text-2xl font-bold">{greeting}</h1>
               
               <div className="min-h-[24px]">
-               {weather ? (
+               {weather && selectedDate ? (
                 <motion.div
-                  key={selectedDay ? `weather-${selectedDay}` : 'weather-loading'}
+                  key={selectedDate ? `weather-${selectedDate.toString()}` : 'weather-loading'}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -112,9 +121,9 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                   className="flex items-center gap-2 text-sm text-gray-300"
                 >
                     {weatherIconMap[weather.icon]}
-                    <span>{weather.temp}°F, {weather.condition} on July {selectedDay}</span>
+                    <span>{weather.temp}°F, {weather.condition} on {format(selectedDate, 'MMMM d')}</span>
                 </motion.div>
-               ) : selectedDay && (
+               ) : selectedDate && (
                   <p className="text-gray-400 text-sm">Loading weather...</p>
                )}
               </div>
@@ -123,16 +132,16 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
               
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={selectedDay}
+                  key={selectedDate?.toString()}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                   className="space-y-4 text-sm text-gray-300 min-h-[100px]"
                 >
-                  {selectedEvents && selectedEvents.length > 0 ? (
+                  {selectedDayEvents && selectedDayEvents.length > 0 ? (
                     <div className="space-y-2">
-                      {selectedEvents.map((event, index) => (
+                      {selectedDayEvents.map((event, index) => (
                         <div key={index}>
                           <p className="font-semibold">{event.title}</p>
                           <p className="text-gray-400 text-xs">{event.details}</p>
@@ -156,11 +165,11 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-4">
                <div className="flex items-center">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700" onClick={handlePrevMonth}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <h2 className="font-semibold px-2">July 2025</h2>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700">
+                <h2 className="font-semibold px-2">{format(displayDate, 'MMMM yyyy')}</h2>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700" onClick={handleNextMonth}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -174,10 +183,12 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
               </div>
             </div>
             <div className="grid grid-cols-7 gap-4 text-center text-xs text-gray-400 mb-2">
-              {days.map((day) => <div key={day}>{day}</div>)}
+              {daysOfWeek.map((day) => <div key={day}>{day}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-4">
-              {calendarDays.map((day, index) => (
+              {calendarDays.map((day, index) => {
+                const isSelected = day && selectedDate ? isSameDay(selectedDate, new Date(displayDate.getFullYear(), displayDate.getMonth(), day)) : false;
+                return (
                 <motion.div
                   key={index}
                   whileHover={{ scale: 1.05 }}
@@ -185,31 +196,32 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                   className="relative"
                 >
                   <Button
-                    variant={day === selectedDay ? 'default' : 'ghost'}
+                    variant={isSelected ? 'default' : 'ghost'}
                     onClick={() => {
                       if (day) {
-                        setSelectedDay(day);
+                        setSelectedDate(new Date(displayDate.getFullYear(), displayDate.getMonth(), day));
                       }
                     }}
                     disabled={!day}
                     className={`
                       h-14 w-14 p-0 rounded-md relative w-full
-                      ${day === selectedDay ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
+                      ${isSelected ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
                       ${!day ? 'invisible' : ''}
                     `}
                   >
                     {day}
-                    {day && events[day] && events[day].length > 0 && (
-                      <div className={`absolute bottom-2 w-1.5 h-1.5 ${day === selectedDay ? 'bg-black' : 'bg-white'} rounded-full`}
+                    {day && showEvents && events[day] && events[day].length > 0 && (
+                      <div className={`absolute bottom-2 w-1.5 h-1.5 ${isSelected ? 'bg-black' : 'bg-white'} rounded-full`}
                         onClick={(e) => {
                           e.stopPropagation();
+                          setSelectedDate(new Date(displayDate.getFullYear(), displayDate.getMonth(), day));
                           setDialogEvent(events[day] || null)
                         }}
                       ></div>
                     )}
                   </Button>
                 </motion.div>
-              ))}
+              )})}
             </div>
           </div>
         </CardContent>
@@ -302,15 +314,26 @@ const getEventLayouts = (dayEvents: Event[]): LaidOutEvent[] => {
 };
 
 
-function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
-  const [miniCalendarSelectedDay, setMiniCalendarSelectedDay] = useState<number | null>(1);
-  const miniCalendarDays = [...Array(2).fill(null), ...Array.from({ length: 31 }, (_, i) => i + 1)];
+function WeekView({ events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate }: ViewProps) {
   const miniCalendarDaysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-  const weekDays = ['TUE 01', 'WED 02', 'THU 03', 'FRI 04', 'SAT 05', 'SUN 06', 'MON 07'];
+  const firstDayOfMonth = getDay(new Date(displayDate.getFullYear(), displayDate.getMonth(), 1));
+  const daysInMonth = getDaysInMonth(displayDate);
+  const miniCalendarDays = [...Array(firstDayOfMonth).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+
+  const startOfWeek = new Date(selectedDate || new Date());
+  startOfWeek.setDate(startOfWeek.getDate() - getDay(startOfWeek));
+  const weekDays = Array.from({length: 7}, (_, i) => {
+    const day = new Date(startOfWeek);
+    day.setDate(day.getDate() + i);
+    return day;
+  });
+
   const timeSlots = Array.from({ length: 15 }, (_, i) => `${(i + 3).toString().padStart(2, '0')}:00`);
   
-  const selectedEvents = miniCalendarSelectedDay ? events[miniCalendarSelectedDay] : null;
+  const showEvents = selectedDate ? (selectedDate.getFullYear() === 2025 && selectedDate.getMonth() === 6) : false;
+  const selectedDayEvents = showEvents && selectedDate && isSameMonth(selectedDate, displayDate) ? events[getDate(selectedDate)] : [];
+
   const gridStartHour = 3;
   const totalHoursInGrid = 15;
 
@@ -320,6 +343,11 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
     purple: 'bg-purple-500/20 border-purple-500/50 hover:bg-purple-500/30 transition-colors',
     yellow: 'bg-yellow-500/20 border-yellow-500/50 hover:bg-yellow-500/30 transition-colors',
   };
+
+  const handlePrevWeek = () => setSelectedDate(subMonths(selectedDate || new Date(), 7));
+  const handleNextWeek = () => setSelectedDate(addMonths(selectedDate || new Date(), 7));
+  const handlePrevMonth = () => setDisplayDate(subMonths(displayDate, 1));
+  const handleNextMonth = () => setDisplayDate(addMonths(displayDate, 1));
 
   return (
     <motion.div
@@ -337,16 +365,16 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
               <h1 className="text-xl font-bold">Community Events</h1>
                 <AnimatePresence mode="wait">
                   <motion.div
-                    key={miniCalendarSelectedDay}
+                    key={selectedDate?.toString()}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                     className="space-y-2 text-sm text-gray-300 min-h-[60px]"
                   >
-                    {selectedEvents && selectedEvents.length > 0 ? (
+                    {selectedDayEvents && selectedDayEvents.length > 0 ? (
                       <div className="space-y-2">
-                      {selectedEvents.map((event, index) => (
+                      {selectedDayEvents.map((event, index) => (
                       <div key={index}>
                           <div className="flex items-center gap-2 font-semibold text-sm"><Clock className="size-4 shrink-0" /> {event.title}</div>
                           <div className="flex items-center gap-2 pl-6 text-xs text-gray-400"><CalendarDays className="size-4 shrink-0" /> {event.details}</div>
@@ -366,32 +394,34 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
 
           <div className="mt-8">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="font-semibold text-sm">July 2025</h2>
+              <h2 className="font-semibold text-sm">{format(displayDate, 'MMMM yyyy')}</h2>
               <div className="flex">
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700"><ChevronLeft className="w-3 h-3" /></Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700"><ChevronRight className="w-3 h-3" /></Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handlePrevMonth}><ChevronLeft className="w-3 h-3" /></Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handleNextMonth}><ChevronRight className="w-3 h-3" /></Button>
               </div>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2">
               {miniCalendarDaysOfWeek.map((day, index) => <div key={`${day}-${index}`}>{day}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-1">
-              {miniCalendarDays.map((day, index) => (
+              {miniCalendarDays.map((day, index) => {
+                 const isSelected = day && selectedDate ? isSameDay(selectedDate, new Date(displayDate.getFullYear(), displayDate.getMonth(), day)) : false;
+                 return (
                  <motion.div 
                     key={index} 
                     className="relative"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                 >
-                    <Button variant={day === miniCalendarSelectedDay ? 'default' : 'ghost'} onClick={() => day && setMiniCalendarSelectedDay(day)} disabled={!day}
-                      className={`h-8 w-8 p-0 rounded-md relative text-xs w-full ${!day ? 'invisible' : ''} ${day === miniCalendarSelectedDay ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}`}>
+                    <Button variant={isSelected ? 'default' : 'ghost'} onClick={() => day && setSelectedDate(new Date(displayDate.getFullYear(), displayDate.getMonth(), day))} disabled={!day}
+                      className={`h-8 w-8 p-0 rounded-md relative text-xs w-full ${!day ? 'invisible' : ''} ${isSelected ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}`}>
                       {day}
                     </Button>
-                    {day && events[day] && events[day].length > 0 && (
-                      <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 ${day === miniCalendarSelectedDay ? 'bg-black' : 'bg-white'} rounded-full`}></div>
+                    {day && showEvents && events[day] && events[day].length > 0 && (
+                      <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 ${isSelected ? 'bg-black' : 'bg-white'} rounded-full`}></div>
                     )}
                  </motion.div>
-              ))}
+              )})}
             </div>
           </div>
         </div>
@@ -400,9 +430,9 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
         <div className="flex-1 flex flex-col min-h-0">
           <header className="p-4 flex justify-between items-center flex-wrap gap-y-2 border-b border-gray-700/50 shrink-0">
             <div className="flex items-center gap-2">
-              <h2 className="font-semibold">Jul 1-7, 2025</h2>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700"><ChevronLeft className="w-4 h-4" /></Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700"><ChevronRight className="w-4 h-4" /></Button>
+              <h2 className="font-semibold">{format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}</h2>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handlePrevWeek}><ChevronLeft className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handleNextWeek}><ChevronRight className="w-4 h-4" /></Button>
             </div>
             <div className="flex items-center gap-1 p-1 bg-black/30 rounded-md">
               <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'month' ? 'bg-gray-600' : ''}`}>
@@ -417,8 +447,8 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="grid grid-cols-7 px-4 pt-2 shrink-0">
               {weekDays.map(day => (
-                <div key={day} className="text-center text-xs text-gray-400 font-semibold py-2">
-                  {day.startsWith('TUE') ? <span className="bg-white text-black rounded-full px-2 py-1 font-bold">{day}</span> : day}
+                <div key={day.toString()} className="text-center text-xs text-gray-400 font-semibold py-2">
+                  {isSameDay(day, new Date()) ? <span className="bg-white text-black rounded-full px-2 py-1 font-bold">{format(day, 'EEE dd')}</span> : format(day, 'EEE dd')}
                 </div>
               ))}
             </div>
@@ -429,11 +459,11 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
               </div>
               <div className="flex-1 flex">
                 {weekDays.map((day, dayIndex) => {
-                   const currentDayNumber = dayIndex + 1;
-                   const dayEvents = (events[currentDayNumber] || []).filter(event => event.startHour >= gridStartHour);
-                   const laidOutEvents = getEventLayouts(dayEvents);
+                   const dayEvents = (day.getFullYear() === 2025 && day.getMonth() === 6 && events[day.getDate()]) || [];
+                   const filteredEvents = dayEvents.filter(event => event.startHour >= gridStartHour);
+                   const laidOutEvents = getEventLayouts(filteredEvents);
                    return (
-                      <div key={day} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
+                      <div key={day.toString()} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
                         {timeSlots.map((time, index) => <div key={index} className="flex-1 border-b border-gray-700/50"></div>)}
                         <AnimatePresence>
                         {laidOutEvents.map((event, eventIndex) => {
@@ -456,7 +486,7 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
                                  left: `${event.left}%`,
                                  width: `${event.width}%`,
                                 }}
-                                onClick={() => setDialogEvent(events[currentDayNumber])}
+                                onClick={() => setDialogEvent(events[day.getDate()])}
                               >
                                <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col border ${eventColorClasses[event.color as keyof typeof eventColorClasses]}`}>
                                  <span className="font-bold">{event.title}</span>
@@ -482,6 +512,8 @@ function WeekView({ events, view, setView, setDialogEvent }: ViewProps) {
 export default function CalendarPage() {
   const [view, setView] = useState<'month' | 'week'>('month');
   const [dialogEvent, setDialogEvent] = useState<Event[] | null>(null);
+  const [displayDate, setDisplayDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   
   const events: Events = {
     1: [
@@ -532,13 +564,15 @@ export default function CalendarPage() {
     return `${formattedHour}:${minutes} ${ampm}`;
   };
 
+  const viewProps = { events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate };
+
   return (
-    <div className={`bg-[#111111] text-white h-screen flex flex-col font-body relative ${view === 'month' ? 'p-4 pt-12 items-center' : 'p-2 md:p-4'}`}>
+    <div className={`bg-[#111111] text-white min-h-screen flex flex-col font-body relative ${view === 'month' ? 'p-4 pt-12 items-center' : 'p-2 md:p-4'}`}>
         <AnimatePresence mode="wait">
           {view === 'month' ? (
-            <MonthView key="month" events={events} view={view} setView={setView} setDialogEvent={setDialogEvent} />
+            <MonthView key="month" {...viewProps} />
           ) : (
-            <WeekView key="week" events={events} view={view} setView={setView} setDialogEvent={setDialogEvent} />
+            <WeekView key="week" {...viewProps} />
           )}
         </AnimatePresence>
       <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
