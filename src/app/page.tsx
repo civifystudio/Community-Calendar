@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -659,7 +660,7 @@ export default function CalendarPage() {
   const viewProps = { events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 w-full">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 w-full">
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
