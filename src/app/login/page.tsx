@@ -20,6 +20,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
+  const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -37,16 +39,12 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-        // After successful sign-in, check if the user is the designated admin.
         const isAdmin = await isAdminUser();
-
         if (isAdmin) {
-            // User is the admin, proceed to the main page.
             router.push('/');
             router.refresh(); 
             return;
         } else {
-            // This is a valid user, but not an admin. Sign them out immediately.
             await supabase.auth.signOut();
             setError('Access denied. Only the designated administrator can log in.');
         }
@@ -57,6 +55,34 @@ export default function LoginPage() {
     setLoading(false);
   };
   
+  if (!isSupabaseConfigured) {
+    return (
+        <div className="min-h-screen flex items-center justify-center p-4">
+            <Card className="w-full max-w-md bg-[#1C1C1C] text-white border-gray-700/50">
+                <CardHeader>
+                    <CardTitle className="text-2xl">Configuration Error</CardTitle>
+                    <CardDescription>Supabase is not configured correctly.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Alert variant="destructive">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Missing Environment Variables</AlertTitle>
+                        <AlertDescription>
+                            <p>Your Supabase URL and Key are not set.</p>
+                            <p className="mt-2">Please ensure you have renamed the <strong>.env.local.example</strong> file to <strong>.env.local</strong> and that it contains your project's credentials.</p>
+                        </AlertDescription>
+                    </Alert>
+                    <div className="flex flex-col space-y-2 pt-4">
+                        <Button asChild variant="link" className="w-full text-gray-400">
+                           <Link href="/">Back to Calendar</Link>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-sm bg-[#1C1C1C] text-white border-gray-700/50">
