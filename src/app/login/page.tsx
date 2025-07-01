@@ -24,17 +24,45 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
       setError(error.message);
-    } else {
-      router.push('/');
-      router.refresh(); 
+      setLoading(false);
+      return;
     }
+
+    if (data.user) {
+        // After successful sign-in, check if the user is in the 'admins' table.
+        const { data: adminRecord, error: adminError } = await supabase
+          .from('admins')
+          .select('user_id')
+          .eq('user_id', data.user.id)
+          .single();
+
+        // PGRST116 means no rows were found, which is expected for non-admins.
+        // We only care about other, actual errors.
+        if (adminError && adminError.code !== 'PGRST116') {
+            await supabase.auth.signOut();
+            setError('An error occurred while verifying your permissions.');
+        } else if (!adminRecord) {
+            // This is a valid user, but not an admin. Sign them out immediately.
+            await supabase.auth.signOut();
+            setError('Access denied. Only administrators can log in.');
+        } else {
+            // User is an admin, proceed to the main page.
+            router.push('/');
+            router.refresh(); 
+            setLoading(false);
+            return;
+        }
+    } else {
+        setError("Sign-in successful, but user data could not be retrieved.");
+    }
+
     setLoading(false);
   };
   
@@ -49,7 +77,7 @@ export default function LoginPage() {
           {error && (
             <Alert variant="destructive" className="mb-4">
               <Terminal className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
+              <AlertTitle>Login Failed</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}

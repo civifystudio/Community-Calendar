@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { format } from 'date-fns';
 
 export interface CalendarEvent {
   id?: number;
@@ -25,74 +24,78 @@ export async function getEvents() {
   return data;
 }
 
-async function verifyAdmin() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || user.email !== process.env.ADMIN_EMAIL) {
-        throw new Error('Unauthorized. Only the admin can perform this action.');
-    }
-    return user;
-}
-
 export async function isAdminUser(): Promise<boolean> {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user || !process.env.ADMIN_EMAIL) {
+
+    if (!user) {
+      return false;
+    }
+
+    // Check if the user's ID exists in the 'admins' table
+    const { data, error } = await supabase
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single();
+
+    // PGRST116: single() found no rows, which is a valid case for non-admins.
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error checking admin status:', error.message);
       return false;
     }
     
-    return user.email === process.env.ADMIN_EMAIL;
+    // If data is not null/undefined, the user is an admin.
+    return !!data;
   } catch (error) {
-    console.error("Error checking admin status:", error);
+    console.error("Error in isAdminUser:", error);
     return false;
   }
 }
 
 
 export async function addEvent(event: Omit<CalendarEvent, 'id'>) {
-  await verifyAdmin();
   const supabase = createClient();
+  // RLS policies will handle authorization.
   const { error } = await supabase.from('events').insert([event]);
   
   if (error) {
     console.error('Error adding event:', error);
-    throw new Error('Failed to add event.');
+    throw new Error('Failed to add event. You might not have permission.');
   }
 
   revalidatePath('/');
 }
 
 export async function updateEvent(event: CalendarEvent) {
-  await verifyAdmin();
   const supabase = createClient();
   
   if (!event.id) {
       throw new Error("Event ID is required for update.");
   }
 
-  // Create a new object without the id for the update payload
   const { id, ...updateData } = event;
 
+  // RLS policies will handle authorization.
   const { error } = await supabase.from('events').update(updateData).eq('id', id);
   
   if (error) {
     console.error('Error updating event:', error);
-    throw new Error('Failed to update event.');
+    throw new Error('Failed to update event. You might not have permission.');
   }
 
   revalidatePath('/');
 }
 
 export async function deleteEvent(id: number) {
-  await verifyAdmin();
   const supabase = createClient();
+  // RLS policies will handle authorization.
   const { error } = await supabase.from('events').delete().eq('id', id);
 
   if (error) {
     console.error('Error deleting event:', error);
-    throw new Error('Failed to delete event.');
+    throw new Error('Failed to delete event. You might not have permission.');
   }
 
   revalidatePath('/');
