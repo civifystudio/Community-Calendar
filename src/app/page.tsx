@@ -177,7 +177,7 @@ const WeekView = () => {
               </div>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2">
-              {miniCalendarDaysOfWeek.map((day) => <div key={day}>{day}</div>)}
+              {miniCalendarDaysOfWeek.map((day, index) => <div key={`${day}-${index}`}>{day}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-1">
               {miniCalendarDays.map((day, index) => (
