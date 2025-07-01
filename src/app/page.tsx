@@ -132,11 +132,12 @@ const MonthView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                   <Button
                     variant={day === selectedDay ? 'default' : 'ghost'}
                     onClick={() => {
-                      if (day) {
+                      if (day && events[day]) {
                         setSelectedDay(day);
-                        if (events[day]) {
-                          setDialogEvent(events[day]);
-                        }
+                        setDialogEvent(events[day]);
+                      } else if (day) {
+                        setSelectedDay(day);
+                        setDialogEvent(null);
                       }
                     }}
                     disabled={!day}
@@ -186,7 +187,7 @@ const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="flex w-full max-w-full h-full"
+      className="flex w-full max-w-full flex-1"
     >
       <div className="flex flex-col md:flex-row w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden h-full">
         {/* Left Panel */}
@@ -290,7 +291,7 @@ const WeekView = ({ events, view, setView, setDialogEvent }: ViewProps) => {
                    const dayEvents = (events[currentDayNumber] || []).filter(event => event.startHour >= gridStartHour);
                    return (
                       <div key={day} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
-                        {timeSlots.map(time => <div key={time} className="flex-1 border-b border-gray-700/50"></div>)}
+                        {timeSlots.map((time, index) => <div key={index} className="flex-1 border-b border-gray-700/50"></div>)}
                         <AnimatePresence>
                         {dayEvents.map((event, eventIndex) => {
                            const top = ((event.startHour - gridStartHour) / totalHoursInGrid) * 100;
@@ -418,3 +419,5 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
