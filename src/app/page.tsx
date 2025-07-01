@@ -111,7 +111,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
               </AnimatePresence>
             </div>
 
-            <div className="flex items-center justify-end gap-2 mt-auto pt-4">
+            <div className="flex items-center justify-start gap-2 mt-auto pt-4">
               <span>Arvin, CA</span>
             </div>
           </div>
@@ -341,7 +341,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
                   </motion.div>
                 </AnimatePresence>
             </div>
-            <div className="flex items-center justify-end gap-2 mt-auto pt-4">
+            <div className="flex items-center justify-start gap-2 mt-auto pt-4">
               <span>Arvin, CA</span>
             </div>
           </div>
