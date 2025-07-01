@@ -435,7 +435,6 @@ export default function CalendarPage() {
   const [dialogEvent, setDialogEvent] = useState<Event[] | null>(null);
   const [displayDate, setDisplayDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [greeting, setGreeting] = useState('');
   
   const events: Events = {
     1: [
@@ -485,17 +484,6 @@ export default function CalendarPage() {
     }
   }, [selectedDate, view, displayDate]);
 
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) {
-      setGreeting('Good morning');
-    } else if (hour < 18) {
-      setGreeting('Good afternoon');
-    } else {
-      setGreeting('Good evening');
-    }
-  }, []);
-
   const formatTime = (hour: number) => {
     const h = Math.floor(hour);
     const m = Math.round((hour - h) * 60);
@@ -509,23 +497,6 @@ export default function CalendarPage() {
 
   return (
     <div className="bg-[#111111] text-white min-h-screen flex flex-col items-center justify-center font-body p-4 w-full">
-      <AnimatePresence>
-        {view === 'month' && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-            className="w-full max-w-4xl mx-auto mb-8"
-          >
-            <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl">
-              <CardContent className="p-4 md:p-6">
-                <h1 className="text-2xl font-bold">{greeting}</h1>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
@@ -558,7 +529,7 @@ export default function CalendarPage() {
         </DialogContent>
       </Dialog>
       <div className="mt-8">
-        <Button variant="outline" size="sm">Admin Login</Button>
+        <Button variant="link" size="sm">Admin Login</Button>
       </div>
     </div>
   );
