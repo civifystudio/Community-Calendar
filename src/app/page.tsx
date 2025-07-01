@@ -23,8 +23,8 @@ import {
   CloudRain,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getWeatherForDay } from '@/services/weather';
-import type { WeatherData } from '@/services/weather';
+import { getWeatherFromAI } from '@/ai/flows/get-weather-flow';
+import type { WeatherData } from '@/ai/flows/get-weather-flow';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays } from 'date-fns';
 
 
@@ -505,7 +505,7 @@ export default function CalendarPage() {
   useEffect(() => {
     if (selectedDate) {
       setWeather(null); // Clear previous weather
-      getWeatherForDay(selectedDate).then(setWeather);
+      getWeatherFromAI(selectedDate).then(setWeather);
     }
   }, [selectedDate]);
 
