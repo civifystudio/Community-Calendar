@@ -8,11 +8,9 @@ import { Separator } from '@/components/ui/separator';
 import {
   ChevronLeft,
   ChevronRight,
-  Globe,
   CalendarDays,
   Columns3,
   LayoutPanelLeft,
-  ChevronDown
 } from 'lucide-react';
 
 export default function CalendarPage() {
@@ -92,10 +90,8 @@ export default function CalendarPage() {
                 )}
               </div>
               <Separator className="bg-gray-700/50" />
-              <div className="flex items-center gap-2 cursor-pointer">
-                <Globe className="w-4 h-4 text-gray-400" />
+              <div className="flex items-center gap-2">
                 <span>Arvin, CA</span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
               </div>
             </div>
 
