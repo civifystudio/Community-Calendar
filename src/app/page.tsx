@@ -124,10 +124,6 @@ export default function CalendarPage() {
           </CardContent>
         </Card>
       </main>
-
-      <footer className="absolute bottom-4">
-        <a href="#" className="text-sm text-gray-500 hover:text-white">Cal.com</a>
-      </footer>
     </div>
   );
 }
