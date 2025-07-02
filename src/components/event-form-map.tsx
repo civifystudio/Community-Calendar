@@ -45,6 +45,7 @@ const EventFormMap = ({ position, onLocationSelect, className }: EventFormMapPro
   return (
     <div className={className} style={{ height: '200px', width: '100%', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
       <MapContainer 
+        key={position.join(',')}
         center={position} 
         zoom={13} 
         scrollWheelZoom={false} 
