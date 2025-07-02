@@ -26,6 +26,8 @@ This table stores all the calendar events.
 ```sql
 -- This ensures the table and its columns have the correct data types.
 -- Note: Supabase's table editor is often easier for managing schema.
+-- The `start_hour` and `end_hour` columns use `double precision` (`float8`), which
+-- is a floating-point number that correctly stores times with minute precision (e.g., 9.5 for 9:30).
 
 CREATE TABLE public.events (
   id bigint NOT NULL,
