@@ -389,10 +389,11 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
         {/* Left Panel */}
         <div className="w-full md:w-[280px] p-4 flex flex-col border-b md:border-b-0 md:border-r border-gray-700/50 text-white">
           <div className='flex flex-col space-y-4 flex-grow'>
-            <div>
-              <div className="flex justify-end items-center">
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold">Community Events</h1>
                 {isAdmin && <Button size="sm" onClick={onAddEvent} className="bg-white text-black hover:bg-gray-300"><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
-              </div>
+            </div>
+            <div>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={selectedDate?.toString()}
@@ -714,7 +715,6 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 w-full">
-      <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Upcoming Community Events</h1>
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
