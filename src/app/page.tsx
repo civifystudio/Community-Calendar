@@ -2,7 +2,7 @@
 'use client';
 
 import { Calendar } from "@/components/ui/calendar";
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import Image from 'next/image';
@@ -19,10 +19,13 @@ import {
 } from '@/components/ui/dialog';
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-} from '@/components/ui/drawer';
+} from "@/components/ui/drawer"
 import {
   ChevronLeft,
   ChevronRight,
@@ -76,7 +79,6 @@ interface ViewProps {
 }
 
 const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (formData: FormData) => Promise<CalendarEvent | null>, onCancel: () => void, isAdmin: boolean, onDelete: (id: number) => void }) => {
-    const [step, setStep] = useState(1);
     const [isSaving, setIsSaving] = useState(false);
     const [newlyCreatedEvent, setNewlyCreatedEvent] = useState<CalendarEvent | null>(null);
 
@@ -139,7 +141,6 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
         setIsSaving(false);
         if (result) {
             setNewlyCreatedEvent(result);
-            setStep(2); // Move to success step
         }
     };
 
@@ -161,114 +162,93 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
         });
     };
 
-    const renderStep = () => {
-        switch (step) {
-            case 1:
-                return (
-                    <div className="space-y-6">
-                        <DialogHeader>
-                            <DialogTitle>{event?.id ? 'Edit Event Details' : 'Add Event Details'}</DialogTitle>
-                            <DialogDescription>Fill in the details for your event.</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="title">Title</Label>
-                                <Input id="title" name="title" value={currentEventData.title} onChange={handleInputChange} required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="details">Details</Label>
-                                <Textarea id="details" name="details" value={currentEventData.details} onChange={handleInputChange} required rows={4} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="start_hour">Start Time</Label>
-                                    <Input id="start_hour" name="start_hour" type="time" value={decimalToTimeString(currentEventData.start_hour)} onChange={handleTimeChange} required />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="end_hour">End Time</Label>
-                                    <Input id="end_hour" name="end_hour" type="time" value={decimalToTimeString(currentEventData.end_hour)} onChange={handleTimeChange} required />
-                                </div>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="external_link">External Link</Label>
-                                <Input id="external_link" name="external_link" value={currentEventData.external_link || ''} onChange={handleInputChange} placeholder="https://example.com/tickets" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="image_url">Event Flyer</Label>
-                                <Input id="image_url" name="image_url" type="file" accept="image/*" onChange={handleImageChange} />
-                                {currentEventData.image_url && (
-                                    <div className="mt-2">
-                                        <Image src={currentEventData.image_url} alt="Flyer preview" width={100} height={100} className="rounded-md object-cover" />
-                                    </div>
-                                )}
-                            </div>
-                             <div className="space-y-2">
-                                <Label>Date</Label>
-                                <Calendar
-                                    mode="single"
-                                    selected={currentEventData.date ? parseISO(currentEventData.date) : new Date()}
-                                    onSelect={(d) => d && setCurrentEventData(prev => ({...prev, date: format(d, 'yyyy-MM-dd')}))}
-                                    className="rounded-md border"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-                            <Button type="button" onClick={handleSubmit} disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save Event'}
-                            </Button>
-                        </DialogFooter>
+    if (newlyCreatedEvent) {
+        return (
+            <div className="flex flex-col items-center justify-center text-center space-y-6 h-full p-6">
+                <ReactConfetti recycle={false} numberOfPieces={200} />
+                <PartyPopper className="h-16 w-16 text-primary" />
+                <DialogHeader>
+                    <DialogTitle>Success!</DialogTitle>
+                    <DialogDescription>Your event has been saved successfully.</DialogDescription>
+                </DialogHeader>
+                {newlyCreatedEvent?.link && (
+                    <div className="flex gap-2">
+                        <Button asChild variant="outline">
+                            <Link href={newlyCreatedEvent.link}>View Event Page</Link>
+                        </Button>
+                        <Button onClick={() => copyLink(newlyCreatedEvent.link)}>
+                            <Copy className="mr-2 h-4 w-4" /> Copy Link
+                        </Button>
                     </div>
-                );
-            case 2:
-                return (
-                    <div className="flex flex-col items-center justify-center text-center space-y-6 h-full">
-                        <ReactConfetti recycle={false} numberOfPieces={200} />
-                        <PartyPopper className="h-16 w-16 text-primary" />
-                        <DialogHeader>
-                            <DialogTitle>Success!</DialogTitle>
-                            <DialogDescription>Your event has been saved successfully.</DialogDescription>
-                        </DialogHeader>
-                        {newlyCreatedEvent?.link && (
-                            <div className="flex gap-2">
-                                <Button asChild variant="outline">
-                                    <Link href={newlyCreatedEvent.link}>View Event Page</Link>
-                                </Button>
-                                <Button onClick={() => copyLink(newlyCreatedEvent.link)}>
-                                    <Copy className="mr-2 h-4 w-4" /> Copy Link
-                                </Button>
-                            </div>
-                        )}
-                        <DialogFooter className="w-full">
-                            <Button type="button" onClick={onCancel} className="w-full">Done</Button>
-                        </DialogFooter>
-                    </div>
-                );
-            default: return null;
-        }
-    };
+                )}
+                <DialogFooter className="w-full pt-4">
+                    <Button type="button" onClick={onCancel} className="w-full">Done</Button>
+                </DialogFooter>
+            </div>
+        )
+    }
 
     return (
-        <div className="flex flex-col h-full overflow-hidden p-6">
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={step}
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -50 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex flex-col flex-grow overflow-y-auto pr-4 -mr-4"
-                >
-                    {renderStep()}
-                </motion.div>
-            </AnimatePresence>
-            {isAdmin && event?.id && step !== 2 && (
-                 <div className="mt-auto pt-6 border-t">
+        <div className="flex flex-col h-full overflow-hidden">
+            <DialogHeader className="p-6">
+                <DialogTitle>{event?.id ? 'Edit Event Details' : 'Add Event Details'}</DialogTitle>
+                <DialogDescription>Fill in the details for your event.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 px-6 pb-6 flex-grow overflow-y-auto">
+                <div className="space-y-2">
+                    <Label htmlFor="title">Title</Label>
+                    <Input id="title" name="title" value={currentEventData.title} onChange={handleInputChange} required />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="details">Details</Label>
+                    <Textarea id="details" name="details" value={currentEventData.details} onChange={handleInputChange} required rows={4} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="start_hour">Start Time</Label>
+                        <Input id="start_hour" name="start_hour" type="time" value={decimalToTimeString(currentEventData.start_hour)} onChange={handleTimeChange} required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="end_hour">End Time</Label>
+                        <Input id="end_hour" name="end_hour" type="time" value={decimalToTimeString(currentEventData.end_hour)} onChange={handleTimeChange} required />
+                    </div>
+                </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="external_link">External Link</Label>
+                    <Input id="external_link" name="external_link" value={currentEventData.external_link || ''} onChange={handleInputChange} placeholder="https://example.com/tickets" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="image_url">Event Flyer</Label>
+                    <Input id="image_url" name="image_url" type="file" accept="image/*" onChange={handleImageChange} />
+                    {currentEventData.image_url && (
+                        <div className="mt-2">
+                            <Image src={currentEventData.image_url} alt="Flyer preview" width={100} height={100} className="rounded-md object-cover" />
+                        </div>
+                    )}
+                </div>
+                    <div className="space-y-2">
+                    <Label>Date</Label>
+                    <Calendar
+                        mode="single"
+                        selected={currentEventData.date ? parseISO(currentEventData.date) : new Date()}
+                        onSelect={(d) => d && setCurrentEventData(prev => ({...prev, date: format(d, 'yyyy-MM-dd')}))}
+                        className="rounded-md border"
+                    />
+                </div>
+            </div>
+            <DialogFooter className="p-6 border-t flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
+                 {isAdmin && event?.id && (
                     <Button type="button" variant="destructive" onClick={() => onDelete(event.id!)}>
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete This Event
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </Button>
+                )}
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+                    <Button type="button" onClick={handleSubmit} disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Event'}
                     </Button>
                 </div>
-            )}
+            </DialogFooter>
         </div>
     );
 };
@@ -612,7 +592,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
             </div>
           </header>
 
-          <div className="flex-1 flex flex-col overflow-auto">
+          <div className="flex-1 flex flex-col">
             <div className="flex flex-col flex-grow">
                 <div className="flex">
                   <div className="w-16 shrink-0 hidden md:block"></div>
@@ -687,6 +667,68 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
   );
 };
 
+const EventDetailsContent = ({ events, onEdit, onCopyLink }: { events: CalendarEvent[], onEdit: (event: CalendarEvent) => void, onCopyLink: (link: string) => void }) => {
+    const { isAdmin } = useCalendarContext();
+    const formatTime = (hour: number) => {
+        const h = Math.floor(hour);
+        const m = Math.round((hour - h) * 60);
+        const minutes = m.toString().padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const formattedHour = h % 12 || 12;
+        return `${formattedHour}:${minutes} ${ampm}`;
+    };
+
+    return (
+        <div className="space-y-4">
+            {events.map((event, index) => (
+                <div key={index} className="space-y-3 border-b border-border pb-4 last:border-b-0 last:pb-0">
+                {event.image_url && (
+                    <div className="relative w-full h-48 rounded-md overflow-hidden">
+                    <Image src={event.image_url} alt={event.title} layout="fill" objectFit="cover" data-ai-hint="event flyer" />
+                    </div>
+                )}
+                <h3 className="font-semibold text-lg">{event.title}</h3>
+                <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
+                <FormattedText text={event.details} className="text-sm text-muted-foreground mt-1" />
+                <div className="flex flex-wrap gap-2 pt-2">
+                    {isAdmin && <Button size="sm" variant="outline" onClick={() => onEdit(event)}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
+                    {event.link && (
+                        <Button asChild size="sm" variant="outline">
+                            <Link href={event.link}>
+                                <Share2 className="mr-2 h-4 w-4"/>
+                                View Page
+                            </Link>
+                        </Button>
+                    )}
+                    {event.external_link && (
+                        <Button asChild size="sm" variant="outline">
+                        <a href={event.external_link} target="_blank" rel="noopener noreferrer">
+                            <LinkIcon className="mr-2 h-4 w-4" />
+                            Event Link
+                        </a>
+                        </Button>
+                    )}
+                    {event.link && (
+                        <Button size="sm" variant="secondary" onClick={() => onCopyLink(event.link!)}>
+                            <Copy className="mr-2 h-4 w-4"/>
+                            Copy Link
+                        </Button>
+                    )}
+                </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+interface CalendarContextType {
+    user: User | null;
+    isAdmin: boolean;
+}
+
+const CalendarContext = React.createContext<CalendarContextType>({ user: null, isAdmin: false });
+
+export const useCalendarContext = () => React.useContext(CalendarContext);
 
 export default function CalendarPage() {
   const { toast } = useToast();
@@ -777,6 +819,7 @@ export default function CalendarPage() {
 
   const handleEditEventClick = (event: CalendarEvent) => {
       if (selectedDate) {
+        setDialogEvent(null);
         setEditingEvent(event);
         setSelectedDate(parseISO(event.date));
         setIsFormOpen(true);
@@ -816,15 +859,6 @@ export default function CalendarPage() {
       setEditingEvent(null);
   }
 
-  const formatTime = (hour: number) => {
-    const h = Math.floor(hour);
-    const m = Math.round((hour - h) * 60);
-    const minutes = m.toString().padStart(2, '0');
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const formattedHour = h % 12 || 12;
-    return `${formattedHour}:${minutes} ${ampm}`;
-  };
-
   const copyLink = (link: string) => {
     const fullUrl = window.location.origin + link;
     navigator.clipboard.writeText(fullUrl);
@@ -853,119 +887,79 @@ export default function CalendarPage() {
 
   const viewProps = { allEvents, events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick, isMobile };
 
-  const EventDetailsContent = ({ events, onClose }: { events: CalendarEvent[], onClose: () => void }) => (
-    <div className="space-y-4">
-      {events.map((event, index) => (
-        <div key={index} className="space-y-3 border-b border-border pb-4 last:border-b-0 last:pb-0">
-           {event.image_url && (
-            <div className="relative w-full h-48 rounded-md overflow-hidden">
-              <Image src={event.image_url} alt={event.title} layout="fill" objectFit="cover" data-ai-hint="event flyer" />
-            </div>
-          )}
-          <h3 className="font-semibold text-lg">{event.title}</h3>
-          <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
-          <FormattedText text={event.details} className="text-sm text-muted-foreground mt-1" />
-          <div className="flex flex-wrap gap-2 pt-2">
-              {isAdmin && <Button size="sm" variant="outline" onClick={() => { onClose(); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
-              {event.link && (
-                <Button asChild size="sm" variant="outline">
-                    <Link href={event.link}>
-                        <Share2 className="mr-2 h-4 w-4"/>
-                        View Page
-                    </Link>
-                </Button>
-              )}
-              {event.external_link && (
-                <Button asChild size="sm" variant="outline">
-                  <a href={event.external_link} target="_blank" rel="noopener noreferrer">
-                    <LinkIcon className="mr-2 h-4 w-4" />
-                    Event Link
-                  </a>
-                </Button>
-              )}
-              {event.link && (
-                <Button size="sm" variant="secondary" onClick={() => copyLink(event.link!)}>
-                    <Copy className="mr-2 h-4 w-4"/>
-                    Copy Link
-                </Button>
-              )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
   return (
-    <div className={cn(
-        "flex flex-col w-full",
-        view === 'month' && "min-h-screen items-center justify-center p-2 sm:p-4 md:p-6",
-        view === 'week' && (isMobile ? "h-screen" : "h-screen p-4")
-      )}>
-      <AnimatePresence mode="wait">
-          {view === 'month' ? (
-            <MonthView key="month" {...viewProps} />
-          ) : (
-            <WeekView key="week" {...viewProps} />
-          )}
-      </AnimatePresence>
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] h-full p-0 flex flex-col">
-            {editingEvent && selectedDate && (
-                <EventForm 
-                  event={editingEvent} 
-                  date={selectedDate} 
-                  onSave={handleSaveEvent} 
-                  onCancel={closeForm}
-                  isAdmin={isAdmin}
-                  onDelete={handleDeleteEvent}
-                />
+    <CalendarContext.Provider value={{ user, isAdmin }}>
+        <div className={cn(
+            "flex flex-col w-full",
+            view === 'month' && "min-h-screen items-center justify-center p-2 sm:p-4 md:p-6",
+            view === 'week' && (isMobile ? "h-svh" : "h-screen")
+        )}>
+        <AnimatePresence mode="wait">
+            {view === 'month' ? (
+                <MonthView key="month" {...viewProps} />
+            ) : (
+                <WeekView key="week" {...viewProps} />
             )}
-        </DialogContent>
-      </Dialog>
-      
-      {!isMobile && (
-        <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
-            <DialogContent>
-              {dialogEvent && dialogEvent.length > 0 && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle>Events for {format(parseISO(dialogEvent[0].date), 'MMMM d')}</DialogTitle>
-                  </DialogHeader>
-                  <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
-                </>
-              )}
+        </AnimatePresence>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="sm:max-w-xl max-h-[90vh] h-full p-0 flex flex-col">
+                {editingEvent && selectedDate && (
+                    <EventForm 
+                    event={editingEvent} 
+                    date={selectedDate} 
+                    onSave={handleSaveEvent} 
+                    onCancel={closeForm}
+                    isAdmin={isAdmin}
+                    onDelete={handleDeleteEvent}
+                    />
+                )}
             </DialogContent>
         </Dialog>
-      )}
+        
+        {!isMobile && (
+            <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
+                <DialogContent>
+                {dialogEvent && dialogEvent.length > 0 && (
+                    <>
+                    <DialogHeader>
+                        <DialogTitle>Events for {format(parseISO(dialogEvent[0].date), 'MMMM d')}</DialogTitle>
+                    </DialogHeader>
+                    <EventDetailsContent events={dialogEvent} onEdit={handleEditEventClick} onCopyLink={copyLink} />
+                    </>
+                )}
+                </DialogContent>
+            </Dialog>
+        )}
 
-      {isMobile && (
-        <Drawer open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
-            <DrawerContent>
-              {dialogEvent && dialogEvent.length > 0 && (
-                <>
-                  <DrawerHeader className="p-4 pb-0 text-left">
-                    <DrawerTitle>Events for {format(parseISO(dialogEvent[0].date), 'MMMM d')}</DrawerTitle>
-                  </DrawerHeader>
-                  <div className="p-4 pt-2 max-h-[80vh] overflow-y-auto">
-                    <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
-                  </div>
-                </>
-              )}
-            </DrawerContent>
-        </Drawer>
-      )}
+        {isMobile && (
+            <Drawer open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)} snapPoints={[0.5, 1]} activeSnapPoint={0.5}>
+                <DrawerContent>
+                {dialogEvent && dialogEvent.length > 0 && (
+                    <>
+                    <DrawerHeader className="p-4 pb-0 text-left">
+                        <DrawerTitle>Events for {format(parseISO(dialogEvent[0].date), 'MMMM d')}</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="p-4 pt-2 overflow-y-auto">
+                        <EventDetailsContent events={dialogEvent} onEdit={handleEditEventClick} onCopyLink={copyLink} />
+                    </div>
+                    </>
+                )}
+                </DrawerContent>
+            </Drawer>
+        )}
 
-      {!isMobile && view === 'month' && (
-        <div className="mt-8 text-center">
-          {isAdmin ? (
-            <Button variant="link" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground hover:no-underline">Admin Logout</Button>
-          ) : (
-            <Button asChild variant="link" size="sm" className="text-muted-foreground hover:text-foreground hover:no-underline">
-              <Link href="/login" className="hover:no-underline">Admin Login</Link>
-            </Button>
-          )}
+        {!isMobile && view === 'month' && (
+            <div className="mt-8 text-center">
+            {isAdmin ? (
+                <Button variant="link" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground hover:no-underline">Admin Logout</Button>
+            ) : (
+                <Button asChild variant="link" size="sm" className="text-muted-foreground hover:text-foreground hover:no-underline">
+                <Link href="/login" className="hover:no-underline">Admin Login</Link>
+                </Button>
+            )}
+            </div>
+        )}
         </div>
-      )}
-    </div>
+    </CalendarContext.Provider>
   );
 }

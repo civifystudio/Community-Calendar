@@ -1,7 +1,6 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { AppHeader } from '@/components/app-header';
 
 export const metadata: Metadata = {
   title: 'Community Calendar',
@@ -22,7 +21,6 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <div className="relative flex min-h-screen flex-col bg-background">
-          <AppHeader />
           <main className="flex-1">{children}</main>
         </div>
         <Toaster />
