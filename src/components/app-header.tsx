@@ -6,12 +6,6 @@ export function AppHeader() {
       <div className="container flex h-16 items-center justify-center">
         <nav className="flex items-center gap-6 md:gap-10">
             <Link
-              href="/"
-              className="flex items-center text-sm font-bold transition-colors hover:text-foreground"
-            >
-              Calendars
-            </Link>
-            <Link
               href="/organizations"
               className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
