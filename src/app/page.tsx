@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Calendar } from "@/components/ui/calendar";
@@ -62,13 +61,6 @@ interface LaidOutEvent extends CalendarEvent {
 interface EventsByDate {
   [key: number]: CalendarEvent[];
 }
-
-const eventColorOptions = [
-    { name: 'blue', class: 'bg-event-blue-bg' },
-    { name: 'green', class: 'bg-event-green-bg' },
-    { name: 'purple', class: 'bg-event-purple-bg' },
-    { name: 'red', class: 'bg-event-red-bg' },
-];
 
 const eventColorClasses = {
   blue: { bg: 'bg-event-blue-bg', text: 'text-event-blue-fg', border: 'border-event-blue-border' },
@@ -203,25 +195,6 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
                     <div className="space-y-2">
                         <Label htmlFor="end_hour">End Time</Label>
                         <Input id="end_hour" name="end_hour" type="time" value={decimalToTimeString(currentEventData.end_hour)} onChange={handleTimeChange} required />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label>Color</Label>
-                    <div className="flex gap-2">
-                        {eventColorOptions.map(color => (
-                            <button
-                                key={color.name}
-                                type="button"
-                                onClick={() => setCurrentEventData(prev => ({...prev, color: color.name}))}
-                                className={cn(
-                                    "h-8 w-8 rounded-full border-2 transition-transform transform hover:scale-110",
-                                    color.class,
-                                    currentEventData.color === color.name ? 'border-ring' : 'border-transparent'
-                                )}
-                            >
-                                {currentEventData.color === color.name && <Check className="h-5 w-5 mx-auto text-primary" />}
-                            </button>
-                        ))}
                     </div>
                 </div>
                 <div className="space-y-2">
