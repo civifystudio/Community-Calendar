@@ -88,4 +88,30 @@ ALTER TABLE ONLY public.admin_emails
   ADD CONSTRAINT admin_emails_pkey PRIMARY KEY (email);
 ```
 
-To use this application, ensure your Supabase tables match this structure. The most critical part for the recent change is that **`start_hour` and `end_hour` must support decimal values.**
+## RPC Function for Geolocation
+
+To find events near a specific location, a remote procedure call (RPC) function is needed. This requires enabling two extensions in Supabase first.
+
+### Step 1: Enable Extensions
+In your Supabase Dashboard, go to **Database** > **Extensions**. Find and enable the following two extensions:
+1.  `cube`
+2.  `earthdistance`
+
+These extensions provide the necessary functions for geolocation queries.
+
+### Step 2: Create the RPC Function
+After enabling the extensions, go to the **SQL Editor** and run the following command to create the `find_events_near` function.
+
+```sql
+create or replace function find_events_near(lat float, lng float, radius_meters float)
+returns setof events as $$
+  select *
+  from events
+  where
+    -- Using the earthdistance extension to find points within a certain radius
+    earth_box(ll_to_earth(lat, lng), radius_meters) @> ll_to_earth(latitude, longitude)
+    and earth_distance(ll_to_earth(lat, lng), ll_to_earth(latitude, longitude)) < radius_meters;
+$$ language sql;
+```
+
+This function will allow the application to efficiently query for events within a specified radius of a given latitude and longitude.
