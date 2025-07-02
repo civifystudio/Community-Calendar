@@ -40,23 +40,18 @@ export async function isAdminUser(): Promise<boolean> {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user || !user.email) {
-      return false;
-    }
-    
-    const { data: admin, error } = await supabase
-      .from('admin_emails')
-      .select('email')
-      .eq('email', user.email)
-      .single();
-
-    if (error && error.code !== 'PGRST116') { // PGRST116: no rows returned
-        console.error('Error checking admin status:', error);
+    if (!user) {
         return false;
     }
 
-    return !!admin;
+    const { data, error } = await supabase.rpc('is_admin');
+
+    if (error) {
+        console.error('Error checking admin status via RPC:', error);
+        return false;
+    }
+
+    return data === true;
   } catch (error) {
     console.error("Error in isAdminUser:", error);
     return false;

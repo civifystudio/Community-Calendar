@@ -71,3 +71,24 @@ CREATE TABLE public.admin_emails (
 ALTER TABLE ONLY public.admin_emails
   ADD CONSTRAINT admin_emails_pkey PRIMARY KEY (email);
 ```
+
+## Database Functions
+
+### `is_admin`
+
+This function checks if the currently authenticated user's email is in the `admin_emails` table. This is a secure way to verify administrative privileges from the server.
+
+```sql
+create or replace function is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists(
+    select 1
+    from admin_emails
+    where email = (select email from auth.users where id = auth.uid())
+  );
+$$;
+```
