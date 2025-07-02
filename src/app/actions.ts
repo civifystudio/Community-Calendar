@@ -98,9 +98,16 @@ export async function saveEvent(event: Partial<CalendarEvent>): Promise<Calendar
         return data;
     } else {
         // Add
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            throw new Error('You must be logged in to create an event.');
+        }
+
+        const insertPayload = { ...payload, user_id: user.id };
+
         const { data: newEvent, error: insertError } = await supabase
             .from('events')
-            .insert([payload])
+            .insert([insertPayload])
             .select()
             .single();
 
