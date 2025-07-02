@@ -85,7 +85,6 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
     const [currentEventData, setCurrentEventData] = useState<Partial<CalendarEvent>>({
         title: '',
         details: '',
-        external_link: '',
         ...event,
         date: event?.date ? format(parseISO(event.date), 'yyyy-MM-dd') : format(date, 'yyyy-MM-dd'),
         start_hour: event?.start_hour || 9,
@@ -185,11 +184,7 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
                         <Input id="end_hour" name="end_hour" type="time" value={decimalToTimeString(currentEventData.end_hour)} onChange={handleTimeChange} required />
                     </div>
                 </div>
-                    <div className="space-y-2">
-                    <Label htmlFor="external_link">External Link</Label>
-                    <Input id="external_link" name="external_link" value={currentEventData.external_link || ''} onChange={handleInputChange} placeholder="https://example.com/tickets" />
-                </div>
-                    <div className="space-y-2">
+                <div className="space-y-2">
                     <Label>Date</Label>
                     <Calendar
                         mode="single"
