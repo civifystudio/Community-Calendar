@@ -66,7 +66,7 @@ export default function LoginPage() {
   
   if (!isSupabaseConfigured) {
     return (
-        <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8">
             <Card className="w-full max-w-md bg-[#1C1C1C] text-white border-gray-700/50">
                 <CardHeader>
                     <CardTitle className="text-2xl">Configuration Error</CardTitle>
@@ -93,7 +93,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8">
       <Card className="w-full max-w-sm bg-[#1C1C1C] text-white border-gray-700/50">
         <CardHeader>
           <CardTitle className="text-2xl">Admin Login</CardTitle>
@@ -135,8 +135,8 @@ export default function LoginPage() {
                  <Button type="submit" className="w-full bg-white text-black hover:bg-gray-300" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
-               <Button asChild variant="link" className="w-full text-gray-400">
-                   <Link href="/">Back to Calendar</Link>
+               <Button asChild variant="link" className="w-full text-gray-400 hover:text-white hover:no-underline">
+                   <Link href="/" className="hover:no-underline">Back to Calendar</Link>
                 </Button>
             </div>
           </form>

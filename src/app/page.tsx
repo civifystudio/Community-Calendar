@@ -180,7 +180,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
       className="w-full max-w-4xl mx-auto"
     >
       <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
-        <CardContent className="p-4 md:p-6 flex flex-col md:flex-row gap-8">
+        <CardContent className="p-2 sm:p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-8">
           <div className="w-full md:w-1/3 flex flex-col">
             <div className='space-y-4 flex-grow'>
                <div className="flex justify-between items-center">
@@ -241,10 +241,10 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                 </Button>
               </div>
             </div>
-            <div className="grid grid-cols-7 gap-4 text-center text-xs text-gray-400 mb-2">
+            <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-xs text-gray-400 mb-2">
               {daysOfWeek.map((day) => <div key={day}>{day}</div>)}
             </div>
-            <div className="grid grid-cols-7 gap-4">
+            <div className="grid grid-cols-7 gap-1 md:gap-2">
               {calendarDays.map((day, index) => {
                 const dayDate = day ? new Date(displayDate.getFullYear(), displayDate.getMonth(), day) : null;
                 const isSelected = dayDate && selectedDate && isSameDay(selectedDate, dayDate);
@@ -266,7 +266,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                     }}
                     disabled={!day}
                     className={`
-                      h-14 w-14 p-0 rounded-md relative w-full
+                      w-full aspect-square p-0 rounded-md relative
                       ${isSelected ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
                       ${isToday && !isSelected ? 'bg-gray-800' : ''}
                       ${!day ? 'invisible' : ''}
@@ -390,7 +390,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
     >
       <div className="flex flex-col md:flex-row w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
         {/* Left Panel */}
-        <div className="w-full md:w-[280px] p-4 flex flex-col border-b md:border-b-0 md:border-r border-gray-700/50 text-white">
+        <div className="w-full md:w-[280px] lg:w-[320px] p-4 flex flex-col border-b md:border-b-0 md:border-r border-gray-700/50 text-white">
           <div className='flex flex-col space-y-4 flex-grow'>
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Community Events</h1>
@@ -464,7 +464,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
 
         {/* Right Panel */}
         <div className="flex-1 flex flex-col min-h-0">
-          <header className="p-4 flex justify-between items-center flex-wrap gap-y-2 border-b border-gray-700/50 shrink-0">
+          <header className="p-2 md:p-4 flex justify-between items-center flex-wrap gap-y-2 border-b border-gray-700/50 shrink-0">
             <div className="flex items-center gap-2">
               <h2 className="font-semibold">{selectedDate && format(weekDays[0], 'MMM d')} - {selectedDate && format(weekDays[6], 'MMM d, yyyy')}</h2>
               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handlePrevWeek}><ChevronLeft className="w-4 h-4" /></Button>
@@ -480,66 +480,69 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
             </div>
           </header>
 
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="grid grid-cols-7 px-4 pt-2 shrink-0">
-              {weekDays.map(day => (
-                <div key={day.toString()} className="text-center text-xs text-gray-400 font-semibold py-2">
-                  {isSameDay(day, new Date()) ? <span className="bg-white text-black rounded-full px-2 py-1 font-bold">{format(day, 'EEE dd')}</span> : format(day, 'EEE dd')}
+          <div className="flex-1 flex flex-col overflow-auto">
+            <div className="flex flex-col flex-grow">
+                <div className="grid grid-cols-7">
+                  <div className="w-16 shrink-0"></div>
+                  {weekDays.map(day => (
+                    <div key={day.toString()} className="flex-1 text-center text-xs text-gray-400 font-semibold py-2">
+                      {isSameDay(day, new Date()) ? <span className="bg-white text-black rounded-full px-2 py-1 font-bold">{format(day, 'EEE dd')}</span> : format(day, 'EEE dd')}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            <div className="flex-1 flex overflow-hidden">
-              <div className="w-16 text-xs text-gray-500 text-right pr-2 flex flex-col">
-                {timeSlots.map(time => <div key={time} className="flex-1 -mt-2 pt-2">{time}</div>)}
-              </div>
-              <div className="flex-1 flex">
-                {weekDays.map((day) => {
-                   const dayEvents = (events[day.getDate()]) || [];
-                   const filteredEvents = dayEvents.filter(event => event.start_hour >= gridStartHour);
-                   const laidOutEvents = getEventLayouts(filteredEvents);
-                   return (
-                      <div key={day.toString()} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
-                        {timeSlots.map((_, index) => <div key={index} className="flex-1 border-b border-gray-700/50"></div>)}
-                        <AnimatePresence>
-                        {laidOutEvents.map((event) => {
-                           const top = ((event.start_hour - gridStartHour) / totalHoursInGrid) * 100;
-                           const height = ((event.end_hour - event.start_hour) / totalHoursInGrid) * 100;
-                           
-                           return (
-                             <motion.div
-                               key={`${event.title}-${event.start_hour}`}
-                               layout
-                               initial={{ opacity: 0, scale: 0.9 }}
-                               animate={{ opacity: 1, scale: 1 }}
-                               exit={{ opacity: 0, scale: 0.9 }}
-                               whileHover={{ scale: 1.05, zIndex: 10, shadow: 'lg' }}
-                               transition={{ duration: 0.2 }}
-                               className="absolute cursor-pointer p-0.5"
-                               style={{ 
-                                 top: `${top}%`, 
-                                 height: `${height}%`,
-                                 left: `${event.left}%`,
-                                 width: `calc(${event.width}% - 2px)`,
-                                 marginLeft: '1px',
-                                }}
-                                onClick={() => {
-                                  if (selectedDate) setSelectedDate(day);
-                                  setDialogEvent(events[day.getDate()])
-                                }}
-                              >
-                               <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col border ${eventColorClasses[event.color as keyof typeof eventColorClasses]}`}>
-                                 <span className="font-bold truncate">{event.title}</span>
-                                 <span className='truncate'>{event.details}</span>
-                               </div>
-                             </motion.div>
-                           )
-                        })}
-                        </AnimatePresence>
-                      </div>
-                   )
-                })}
-              </div>
+                <div className="flex-1 flex overflow-hidden">
+                  <div className="w-16 text-xs text-gray-500 text-right pr-2 flex flex-col">
+                    {timeSlots.map(time => <div key={time} className="flex-1 -mt-2 pt-2">{time}</div>)}
+                  </div>
+                  <div className="flex-1 grid grid-cols-7">
+                    {weekDays.map((day) => {
+                       const dayEvents = (events[day.getDate()]) || [];
+                       const filteredEvents = dayEvents.filter(event => event.start_hour >= gridStartHour);
+                       const laidOutEvents = getEventLayouts(filteredEvents);
+                       return (
+                          <div key={day.toString()} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
+                            {timeSlots.map((_, index) => <div key={index} className="flex-1 border-b border-gray-700/50"></div>)}
+                            <AnimatePresence>
+                            {laidOutEvents.map((event) => {
+                               const top = ((event.start_hour - gridStartHour) / totalHoursInGrid) * 100;
+                               const height = ((event.end_hour - event.start_hour) / totalHoursInGrid) * 100;
+                               
+                               return (
+                                 <motion.div
+                                   key={`${event.title}-${event.start_hour}`}
+                                   layout
+                                   initial={{ opacity: 0, scale: 0.9 }}
+                                   animate={{ opacity: 1, scale: 1 }}
+                                   exit={{ opacity: 0, scale: 0.9 }}
+                                   whileHover={{ scale: 1.05, zIndex: 10, shadow: 'lg' }}
+                                   transition={{ duration: 0.2 }}
+                                   className="absolute cursor-pointer p-0.5"
+                                   style={{ 
+                                     top: `${top}%`, 
+                                     height: `${height}%`,
+                                     left: `${event.left}%`,
+                                     width: `calc(${event.width}% - 2px)`,
+                                     marginLeft: '1px',
+                                    }}
+                                   onClick={() => {
+                                      if (selectedDate) setSelectedDate(day);
+                                      setDialogEvent(events[day.getDate()])
+                                    }}
+                                  >
+                                   <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col border ${eventColorClasses[event.color as keyof typeof eventColorClasses]}`}>
+                                     <span className="font-bold truncate">{event.title}</span>
+                                     <span className='truncate'>{event.details}</span>
+                                   </div>
+                                 </motion.div>
+                               )
+                            })}
+                            </AnimatePresence>
+                          </div>
+                       )
+                    })}
+                  </div>
+                </div>
             </div>
           </div>
         </div>
@@ -726,7 +729,7 @@ export default function CalendarPage() {
   const viewProps = { events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 w-full">
+    <div className="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 w-full">
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
@@ -788,10 +791,10 @@ export default function CalendarPage() {
       </Dialog>
       <div className="mt-8 text-center">
         {isAdmin ? (
-          <Button variant="link" size="sm" onClick={handleSignOut} className="text-gray-400 hover:text-white no-underline hover:no-underline">Admin Logout</Button>
+          <Button variant="link" size="sm" onClick={handleSignOut} className="text-gray-400 hover:text-white hover:no-underline">Admin Logout</Button>
         ) : (
-          <Button asChild variant="link" size="sm" className="text-gray-400 hover:text-white no-underline hover:no-underline">
-            <Link href="/login">Admin Login</Link>
+          <Button asChild variant="link" size="sm" className="text-gray-400 hover:text-white hover:no-underline">
+            <Link href="/login" className="hover:no-underline">Admin Login</Link>
           </Button>
         )}
       </div>

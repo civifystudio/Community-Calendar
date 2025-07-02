@@ -44,18 +44,18 @@ export default async function EventPage({ params }: { params: { id: string } }) 
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 w-full bg-[#111111]">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 md:p-8 w-full bg-[#111111]">
       <Card className="w-full max-w-2xl bg-[#1C1C1C] text-white border-gray-700/50 relative overflow-hidden">
         <div className={`absolute top-0 left-0 right-0 h-2 ${eventColorClasses[event.color]}`}></div>
-        <CardHeader className="pt-8">
-          <CardTitle className="text-3xl font-bold">{event.title}</CardTitle>
+        <CardHeader className="pt-8 px-4 sm:px-6">
+          <CardTitle className="text-2xl sm:text-3xl font-bold">{event.title}</CardTitle>
           <CardDescription className="text-gray-400 pt-2">
             Event details for the community calendar.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-4 sm:p-6">
             <Separator className="bg-gray-700/50" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base sm:text-lg">
                 <div className="flex items-center gap-3">
                     <Calendar className="h-5 w-5 text-gray-400"/>
                     <span>{format(eventDate, 'EEEE, MMMM d, yyyy')}</span>
