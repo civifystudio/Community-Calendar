@@ -19,7 +19,6 @@ This table stores all the calendar events.
 | `details`       | `text`        | Not Null                   | A longer description for the event.                                         |
 | `start_hour`    | `float8`      | Not Null                   | **Crucial:** The start time, as a decimal. E.g., 9.5 for 9:30 AM. Must be `float8` or `numeric`. |
 | `end_hour`      | `float8`      | Not Null                   | **Crucial:** The end time, as a decimal. E.g., 17.0 for 5:00 PM. Must be `float8` or `numeric`. |
-| `external_link` | `text`        | Nullable                   | An external link for the event (e.g., tickets, info page).                  |
 | `link`          | `text`        | Nullable                   | A unique, shareable link to the event's detail page (e.g., `/event/123`).   |
 | `color`         | `text`        | Not Null, `blue` default   | The color for the event display. E.g., 'blue', 'green'.                     |
 
@@ -37,7 +36,6 @@ CREATE TABLE public.events (
   details text NOT NULL,
   start_hour double precision NOT NULL,
   end_hour double precision NOT NULL,
-  external_link text,
   link text,
   color text NOT NULL DEFAULT 'blue'::text
 );
