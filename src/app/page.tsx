@@ -20,9 +20,9 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet';
 import {
   ChevronLeft,
@@ -183,7 +183,7 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="w-full max-w-4xl mx-auto"
+      className="w-full max-w-4xl"
     >
       <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
         <CardContent className="p-2 sm:p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-8">
@@ -410,7 +410,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="w-full max-w-7xl mx-auto flex-1 flex"
+      className="w-full max-w-7xl flex"
     >
       <div className="flex w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
         {/* Left Panel */}
@@ -749,12 +749,13 @@ export default function CalendarPage() {
 
   const EventDetailsContent = ({ events, onClose }: { events: CalendarEvent[], onClose: () => void }) => (
     <>
-      <DialogHeader>
-        <DialogTitle>Events for {format(parseISO(events[0].date), 'MMMM d')}</DialogTitle>
-        <DialogDescription className="text-gray-400">
+      <SheetHeader>
+        <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-gray-600 mb-4" />
+        <SheetTitle>Events for {format(parseISO(events[0].date), 'MMMM d')}</SheetTitle>
+        <SheetDescription className="text-gray-400">
           All scheduled events are listed below.
-        </DialogDescription>
-      </DialogHeader>
+        </SheetDescription>
+      </SheetHeader>
       <div className="py-4 space-y-4 overflow-y-auto pr-4 -mr-4">
         {events.map((event, index) => (
           <div key={index} className="space-y-1 border-b border-gray-700/50 pb-4 last:border-b-0 last:pb-0">
@@ -785,7 +786,7 @@ export default function CalendarPage() {
   );
 
   return (
-    <div className="min-h-screen p-2 sm:p-4 md:p-6 w-full">
+    <div className="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 w-full">
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
@@ -821,7 +822,6 @@ export default function CalendarPage() {
       {isMobile && (
         <Sheet open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
             <SheetContent side="bottom" className="bg-[#1C1C1C] text-white border-gray-700/50">
-                <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-gray-600 mb-4" />
                 {dialogEvent && dialogEvent.length > 0 && (
                      <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
                 )}
