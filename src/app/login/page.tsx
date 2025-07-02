@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import Link from 'next/link';
+import { isAdminUser } from '@/app/actions';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -38,14 +39,26 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+      
+      if (data.user) {
+        // After successful sign-in, check if the user is a designated admin
+        const isAdmin = await isAdminUser();
 
-      // If sign-in is successful, the user is an admin. Redirect to the main page.
-      router.push('/');
-      router.refresh();
-
+        if (isAdmin) {
+          // User is an admin, redirect to the main page.
+          router.push('/');
+          router.refresh();
+        } else {
+          // This is a valid Supabase user, but not an admin. Sign them out.
+          await supabase.auth.signOut();
+          setError('Login successful, but this account does not have administrative privileges.');
+        }
+      } else {
+        setError('Login failed. Could not retrieve user data after sign-in.');
+      }
     } catch (e: any) {
       console.error(e);
-      setError("Could not connect to the server. Please ensure your Supabase credentials are correct and that you have restarted the application server.");
+      setError("An unexpected error occurred. Please ensure your Supabase connection is configured and try again.");
     }
 
     setLoading(false);

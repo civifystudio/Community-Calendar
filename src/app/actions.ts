@@ -29,8 +29,24 @@ export async function isAdminUser(): Promise<boolean> {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    // Any logged-in user is now considered an admin.
-    return !!user;
+
+    if (!user) {
+      return false;
+    }
+    
+    // Check if the user's email is in the admin_emails table
+    const { data: admin, error } = await supabase
+      .from('admin_emails')
+      .select('email')
+      .eq('email', user.email)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116: no rows returned, which is not an error here
+        console.error('Error checking admin status:', error);
+        return false;
+    }
+
+    return !!admin;
   } catch (error) {
     console.error("Error in isAdminUser:", error);
     return false;
@@ -44,7 +60,7 @@ export async function addEvent(event: Omit<CalendarEvent, 'id'>) {
   
     if (error) {
       console.error('Error adding event:', error);
-      throw new Error('Failed to add event. Ensure you are logged in as an admin.');
+      throw new Error('Failed to add event. You may not have administrative privileges.');
     }
 
   revalidatePath('/');
@@ -63,7 +79,7 @@ export async function updateEvent(event: CalendarEvent) {
   
     if (error) {
       console.error('Error updating event:', error);
-      throw new Error('Failed to update event. Ensure you are logged in as an admin.');
+      throw new Error('Failed to update event. You may not have administrative privileges.');
     }
 
   revalidatePath('/');
@@ -75,7 +91,7 @@ export async function deleteEvent(id: number) {
 
   if (error) {
     console.error('Error deleting event:', error);
-    throw new Error('Failed to delete event. Ensure you are logged in as an admin.');
+    throw new Error('Failed to delete event. You may not have administrative privileges.');
   }
 
   revalidatePath('/');
