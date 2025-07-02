@@ -505,7 +505,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
 
           <div className="flex-1 flex flex-col overflow-auto">
             <div className="flex flex-col flex-grow">
-                <div className="grid grid-cols-7">
+                <div className="flex">
                   <div className="w-16 shrink-0 hidden md:block"></div>
                   {weekDays.map(day => (
                     <div key={day.toString()} className="flex-1 text-center text-xs text-gray-400 font-semibold py-2">
@@ -754,7 +754,7 @@ export default function CalendarPage() {
           All scheduled events are listed below.
         </DialogDescription>
       </DialogHeader>
-      <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-4 -mr-4">
+      <div className="py-4 space-y-4 overflow-y-auto pr-4 -mr-4">
         {events.map((event, index) => (
           <div key={index} className="space-y-1 border-b border-gray-700/50 pb-4 last:border-b-0 last:pb-0">
             <h3 className="font-semibold text-lg">{event.title}</h3>
