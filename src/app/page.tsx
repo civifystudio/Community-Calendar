@@ -311,7 +311,7 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
       transition={{ duration: 0.3 }}
       className="w-full max-w-4xl"
     >
-      <Card className="border-border rounded-xl overflow-hidden">
+      <Card className="bg-transparent shadow-none border-none rounded-xl overflow-hidden">
         <CardContent className="p-2 sm:p-4 md:p-6 flex flex-col gap-4">
           {/* HEADER */}
           <div className="flex justify-between items-center flex-wrap gap-y-2">
@@ -963,7 +963,7 @@ export default function CalendarPage() {
         </Sheet>
       )}
 
-      {view === 'month' && (
+      {!isMobile && view === 'month' && (
         <div className="mt-8 text-center">
           {isAdmin ? (
             <Button variant="link" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground hover:no-underline">Admin Logout</Button>
