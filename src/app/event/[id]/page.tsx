@@ -9,6 +9,7 @@ import { Calendar, Clock, ArrowLeft, Link as LinkIcon } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { FormattedText } from '@/components/formatted-text';
 
 export default async function EventPage({ params }: { params: { id: string } }) {
   const eventId = Number(params.id);
@@ -67,7 +68,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             </div>
           <div className="space-y-2">
             <h3 className="text-xl font-semibold">About this event</h3>
-            <p className="text-muted-foreground whitespace-pre-wrap">{event.details}</p>
+            <FormattedText text={event.details} className="text-muted-foreground" />
           </div>
           {event.external_link && (
             <div className="pt-4">

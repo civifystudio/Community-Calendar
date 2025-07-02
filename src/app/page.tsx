@@ -46,6 +46,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { FormattedText } from '@/components/formatted-text';
+import { cn } from '@/lib/utils';
 
 interface LaidOutEvent extends CalendarEvent {
   left: number;
@@ -198,7 +200,7 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
           <div className="w-full md:w-1/3 flex flex-col">
             <div className='space-y-4 flex-grow'>
                <div className="flex justify-between items-center">
-                    <h1 className="text-4xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
+                    <h1 className="text-5xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
                     {isAdmin && <Button size="sm" onClick={onAddEvent}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
                </div>
                <Separator />
@@ -217,8 +219,8 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                       {selectedDayEvents.map((event, index) => (
                         <div key={index} className="flex justify-between items-start">
                           <div>
-                            <p className="text-xl font-semibold text-foreground">{event.title}</p>
-                            <p className="text-lg">{event.details}</p>
+                            <p className="text-2xl font-semibold text-foreground">{event.title}</p>
+                            <FormattedText text={event.details} className="text-xl" />
                           </div>
                            {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditEvent(event)}><Edit className="h-4 w-4"/></Button>}
                         </div>
@@ -754,7 +756,7 @@ export default function CalendarPage() {
             )}
             <h3 className="font-semibold text-lg">{event.title}</h3>
             <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
-            <p className="text-sm text-muted-foreground mt-1">{event.details}</p>
+            <FormattedText text={event.details} className="text-sm text-muted-foreground mt-1" />
             <div className="flex flex-wrap gap-2 pt-2">
                 {isAdmin && <Button size="sm" variant="outline" onClick={() => { onClose(); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
                 {event.link && (
@@ -787,7 +789,11 @@ export default function CalendarPage() {
   );
 
   return (
-    <div className={`flex flex-col w-full ${view === 'month' ? "min-h-screen items-center justify-center p-2 sm:p-4 md:p-6" : "h-screen"}`}>
+    <div className={cn(
+        "flex flex-col w-full",
+        view === 'month' && "min-h-screen items-center justify-center p-2 sm:p-4 md:p-6",
+        view === 'week' && (isMobile ? "h-screen" : "h-screen p-4")
+      )}>
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
@@ -842,5 +848,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
