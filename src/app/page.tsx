@@ -78,7 +78,7 @@ interface ViewProps {
   isMobile: boolean | undefined;
 }
 
-const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (formData: FormData) => Promise<CalendarEvent | null>, onCancel: () => void, isAdmin: boolean, onDelete: (id: number) => void }) => {
+const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (event: Partial<CalendarEvent>) => Promise<CalendarEvent | null>, onCancel: () => void, isAdmin: boolean, onDelete: (id: number) => void }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [newlyCreatedEvent, setNewlyCreatedEvent] = useState<CalendarEvent | null>(null);
 
@@ -109,18 +109,7 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
 
     const handleSubmit = async () => {
         setIsSaving(true);
-        const formData = new FormData();
-        Object.entries(currentEventData).forEach(([key, value]) => {
-            if (value !== null && value !== undefined) {
-                formData.append(key, String(value));
-            }
-        });
-
-        if (event?.id) {
-          formData.set('id', String(event.id));
-        }
-
-        const result = await onSave(formData);
+        const result = await onSave(currentEventData);
         setIsSaving(false);
         if (result) {
             setNewlyCreatedEvent(result);
@@ -795,9 +784,9 @@ export default function CalendarPage() {
       }
   };
   
-  const handleSaveEvent = async (formData: FormData): Promise<CalendarEvent | null> => {
+  const handleSaveEvent = async (eventData: Partial<CalendarEvent>): Promise<CalendarEvent | null> => {
       try {
-        const result = await saveEvent(formData);
+        const result = await saveEvent(eventData);
         toast({ title: "Event saved successfully!" });
         await fetchAndSetEvents();
         return result;

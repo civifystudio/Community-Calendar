@@ -59,30 +59,35 @@ export async function isAdminUser(): Promise<boolean> {
   }
 }
 
-
-export async function saveEvent(formData: FormData): Promise<CalendarEvent | null> {
+export async function saveEvent(event: Partial<CalendarEvent>): Promise<CalendarEvent | null> {
     const supabase = createClient();
     const isAdmin = await isAdminUser();
     if (!isAdmin) {
         throw new Error('You must have administrative privileges to save an event.');
     }
 
-    const eventId = formData.get('id') ? Number(formData.get('id')) : null;
+    const eventId = event.id;
     
-    const eventData: Omit<CalendarEvent, 'id' | 'link'> = {
-        date: formData.get('date') as string,
-        title: formData.get('title') as string,
-        details: formData.get('details') as string,
-        start_hour: Number(formData.get('start_hour')),
-        end_hour: Number(formData.get('end_hour')),
-        external_link: (formData.get('external_link') as string) || null,
+    // Sanitize the object to only include columns that exist in the DB for insert/update.
+    const payload = {
+        date: event.date,
+        title: event.title,
+        details: event.details,
+        start_hour: event.start_hour,
+        end_hour: event.end_hour,
+        external_link: event.external_link || null
     };
+
+    // Server-side validation
+    if (!payload.title || !payload.details || !payload.date || payload.start_hour === undefined || payload.end_hour === undefined) {
+        throw new Error("Missing required event data. Title, details, date, and times are required.");
+    }
     
     if (eventId) {
         // Update
         const { data, error } = await supabase
             .from('events')
-            .update(eventData)
+            .update(payload)
             .eq('id', eventId)
             .select()
             .single();
@@ -98,7 +103,7 @@ export async function saveEvent(formData: FormData): Promise<CalendarEvent | nul
         // Add
         const { data: newEvent, error: insertError } = await supabase
             .from('events')
-            .insert([eventData])
+            .insert([payload])
             .select()
             .single();
 
@@ -121,7 +126,7 @@ export async function saveEvent(formData: FormData): Promise<CalendarEvent | nul
 
         revalidatePath('/');
         revalidatePath(`/event/${newEvent.id}`);
-        return updatedEvent;
+        return updatedEvent || newEvent;
     }
 }
 
