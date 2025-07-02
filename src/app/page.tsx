@@ -22,10 +22,11 @@ import {
   ChevronRight,
   CalendarDays,
   Columns3,
-  Clock,
   PlusCircle,
   Trash2,
-  Edit
+  Edit,
+  Share2,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays, parseISO } from 'date-fns';
@@ -64,14 +65,13 @@ interface ViewProps {
   onEditEvent: (event: CalendarEvent) => void;
 }
 
-const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (event: CalendarEvent | Omit<CalendarEvent, "id">) => void, onCancel: () => void }) => {
+const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (event: CalendarEvent | Omit<CalendarEvent, "id" | "link">) => void, onCancel: () => void }) => {
     const [title, setTitle] = useState(event?.title || '');
     const [details, setDetails] = useState(event?.details || '');
     const [startHour, setStartHour] = useState(event?.start_hour || 9);
     const [endHour, setEndHour] = useState(event?.end_hour || 10);
-    const [color, setColor] = useState<'green' | 'blue' | 'purple' | 'yellow'>(event?.color || 'blue');
+    const [color, setColor] = useState<CalendarEvent['color']>(event?.color || 'blue');
     const [selectedDate, setSelectedDate] = useState<Date>(date);
-    const [link, setLink] = useState(event?.link || '');
   
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -83,13 +83,12 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
         start_hour: Number(startHour),
         end_hour: Number(endHour),
         color,
-        link,
       };
-      // Type guard to differentiate between add and update
+      
       if ('id' in eventData && eventData.id) {
         onSave(eventData as CalendarEvent);
       } else {
-        const { id, ...newEventData } = eventData;
+        const { id, link, ...newEventData } = eventData;
         onSave(newEventData);
       }
     };
@@ -121,12 +120,8 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="link">Link (Optional)</Label>
-              <Input id="link" type="url" value={link} placeholder="https://example.com" onChange={(e) => setLink(e.target.value)} className="bg-black/30 border-gray-600" />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="color">Color</Label>
-              <Select value={color} onValueChange={(value: 'green' | 'blue' | 'purple' | 'yellow') => setColor(value)}>
+              <Select value={color} onValueChange={(value: CalendarEvent['color']) => setColor(value)}>
                 <SelectTrigger id="color" className="bg-black/30 border-gray-600">
                   <SelectValue placeholder="Select a color" />
                 </SelectTrigger>
@@ -135,6 +130,10 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
                   <SelectItem value="green">Green</SelectItem>
                   <SelectItem value="purple">Purple</SelectItem>
                   <SelectItem value="yellow">Yellow</SelectItem>
+                  <SelectItem value="red">Red</SelectItem>
+                  <SelectItem value="orange">Orange</SelectItem>
+                  <SelectItem value="pink">Pink</SelectItem>
+                  <SelectItem value="teal">Teal</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -370,6 +369,10 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
     blue: 'bg-blue-500/20 border-blue-500/50 hover:bg-blue-500/30 transition-colors',
     purple: 'bg-purple-500/20 border-purple-500/50 hover:bg-purple-500/30 transition-colors',
     yellow: 'bg-yellow-500/20 border-yellow-500/50 hover:bg-yellow-500/30 transition-colors',
+    red: 'bg-red-500/20 border-red-500/50 hover:bg-red-500/30 transition-colors',
+    orange: 'bg-orange-500/20 border-orange-500/50 hover:bg-orange-500/30 transition-colors',
+    pink: 'bg-pink-500/20 border-pink-500/50 hover:bg-pink-500/30 transition-colors',
+    teal: 'bg-teal-500/20 border-teal-500/50 hover:bg-teal-500/30 transition-colors',
   };
 
   const handlePrevWeek = () => setSelectedDate(subDays(selectedDate, 7));
@@ -649,7 +652,7 @@ export default function CalendarPage() {
       }
   };
   
-  const handleSaveEvent = async (eventData: CalendarEvent | Omit<CalendarEvent, 'id'>) => {
+  const handleSaveEvent = async (eventData: CalendarEvent | Omit<CalendarEvent, 'id' | 'link'>) => {
       try {
         if ('id' in eventData) {
             await updateEvent(eventData as CalendarEvent);
@@ -689,6 +692,15 @@ export default function CalendarPage() {
     const ampm = h >= 12 ? 'PM' : 'AM';
     const formattedHour = h % 12 || 12;
     return `${formattedHour}:${minutes} ${ampm}`;
+  };
+
+  const copyLink = (link: string) => {
+    const fullUrl = window.location.origin + link;
+    navigator.clipboard.writeText(fullUrl);
+    toast({
+      title: "Link Copied!",
+      description: "The event link has been copied to your clipboard.",
+    });
   };
 
   if (!displayDate || !selectedDate) {
@@ -750,7 +762,23 @@ export default function CalendarPage() {
                     <h3 className="font-semibold text-lg">{event.title}</h3>
                     <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
                     <p className="text-sm text-gray-400 mt-1">{event.details}</p>
-                     {isAdmin && <Button size="sm" variant="outline" className="mt-2" onClick={() => { setDialogEvent(null); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
+                    <div className="flex gap-2 pt-2">
+                        {isAdmin && <Button size="sm" variant="outline" onClick={() => { setDialogEvent(null); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
+                        {event.link && (
+                            <>
+                                <Button asChild size="sm" variant="outline">
+                                    <Link href={event.link}>
+                                        <Share2 className="mr-2 h-4 w-4"/>
+                                        View Page
+                                    </Link>
+                                </Button>
+                                <Button size="sm" variant="secondary" onClick={() => copyLink(event.link!)}>
+                                    <Copy className="mr-2 h-4 w-4"/>
+                                    Copy Link
+                                </Button>
+                            </>
+                        )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -770,9 +798,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    

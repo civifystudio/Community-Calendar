@@ -10,7 +10,7 @@ export interface CalendarEvent {
   details: string;
   start_hour: number;
   end_hour: number;
-  color: 'green' | 'blue' | 'purple' | 'yellow';
+  color: 'green' | 'blue' | 'purple' | 'yellow' | 'red' | 'orange' | 'pink' | 'teal';
   link?: string;
 }
 
@@ -25,23 +25,33 @@ export async function getEvents() {
   return data;
 }
 
+export async function getEventById(id: number) {
+    const supabase = createClient();
+    const { data, error } = await supabase.from('events').select('*').eq('id', id).single();
+  
+    if (error) {
+      console.error('Error fetching event by ID:', error);
+      return null;
+    }
+    return data;
+}
+
 export async function isAdminUser(): Promise<boolean> {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!user || !user.email) {
       return false;
     }
     
-    // Check if the user's email is in the admin_emails table
     const { data: admin, error } = await supabase
       .from('admin_emails')
       .select('email')
       .eq('email', user.email)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116: no rows returned, which is not an error here
+    if (error && error.code !== 'PGRST116') { // PGRST116: no rows returned
         console.error('Error checking admin status:', error);
         return false;
     }
@@ -54,16 +64,45 @@ export async function isAdminUser(): Promise<boolean> {
 }
 
 
-export async function addEvent(event: Omit<CalendarEvent, 'id'>) {
-  const supabase = createClient();
-  const { error } = await supabase.from('events').insert([{ ...event, link: event.link || null }]);
-  
-    if (error) {
-      console.error('Error adding event:', error);
-      throw new Error('Failed to add event. You may not have administrative privileges.');
+export async function addEvent(event: Omit<CalendarEvent, 'id' | 'link'>): Promise<CalendarEvent | null> {
+    const supabase = createClient();
+    
+    // 1. Insert the event without a link to get the new ID
+    const { data: newEvent, error: insertError } = await supabase
+        .from('events')
+        .insert([event])
+        .select()
+        .single();
+
+    if (insertError) {
+        console.error('Error adding event:', insertError);
+        throw new Error('Failed to add event. You may not have administrative privileges.');
     }
 
-  revalidatePath('/');
+    if (!newEvent) {
+        throw new Error('Failed to retrieve new event after creation.');
+    }
+
+    // 2. Update the event with the generated link
+    const link = `/event/${newEvent.id}`;
+    const { data: updatedEvent, error: updateError } = await supabase
+        .from('events')
+        .update({ link })
+        .eq('id', newEvent.id)
+        .select()
+        .single();
+    
+    if (updateError) {
+        console.error('Error updating event with link:', updateError);
+        // Event was created but link failed. Still revalidate.
+        revalidatePath('/');
+        revalidatePath(`/event/${newEvent.id}`);
+        throw new Error('Event created, but failed to set shareable link.');
+    }
+    
+    revalidatePath('/');
+    revalidatePath(`/event/${newEvent.id}`);
+    return updatedEvent;
 }
 
 export async function updateEvent(event: CalendarEvent) {
@@ -74,8 +113,9 @@ export async function updateEvent(event: CalendarEvent) {
   }
 
   const { id, ...updateData } = event;
+  const link = `/event/${id}`;
 
-  const { error } = await supabase.from('events').update({...updateData, link: updateData.link || null}).eq('id', id);
+  const { error } = await supabase.from('events').update({...updateData, link }).eq('id', id);
   
     if (error) {
       console.error('Error updating event:', error);
@@ -83,6 +123,7 @@ export async function updateEvent(event: CalendarEvent) {
     }
 
   revalidatePath('/');
+  revalidatePath(`/event/${id}`);
 }
 
 export async function deleteEvent(id: number) {
@@ -95,6 +136,7 @@ export async function deleteEvent(id: number) {
   }
 
   revalidatePath('/');
+  revalidatePath(`/event/${id}`);
 }
 
 export async function signOut() {
