@@ -715,6 +715,7 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 w-full">
+      <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Upcoming Community Events</h1>
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
@@ -770,5 +771,7 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
 
     
