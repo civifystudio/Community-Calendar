@@ -94,7 +94,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm bg-transparent border-none shadow-none">
         <CardHeader>
           <CardTitle className="text-2xl">Admin Login</CardTitle>
           <CardDescription>Enter your admin credentials to manage events.</CardDescription>
