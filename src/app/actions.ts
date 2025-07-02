@@ -29,24 +29,8 @@ export async function isAdminUser(): Promise<boolean> {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user || !user.email) {
-      return false;
-    }
-
-    // Directly query the admin_emails table
-    const { data, error } = await supabase
-      .from('admin_emails')
-      .select('*')
-      .eq('email', user.email);
-
-    if (error) {
-      console.error('Error checking admin status:', error);
-      return false;
-    }
-
-    // If a record was found, the user is an admin.
-    return data && data.length > 0;
+    // Any logged-in user is now considered an admin.
+    return !!user;
   } catch (error) {
     console.error("Error in isAdminUser:", error);
     return false;
@@ -56,16 +40,11 @@ export async function isAdminUser(): Promise<boolean> {
 
 export async function addEvent(event: Omit<CalendarEvent, 'id'>) {
   const supabase = createClient();
-  const isAdmin = await isAdminUser();
-  if (!isAdmin) {
-      throw new Error('You must be an admin to add events.');
-  }
-  
   const { error } = await supabase.from('events').insert([{ ...event, link: event.link || null }]);
   
     if (error) {
       console.error('Error adding event:', error);
-      throw new Error('Failed to add event.');
+      throw new Error('Failed to add event. Ensure you are logged in as an admin.');
     }
 
   revalidatePath('/');
@@ -73,10 +52,6 @@ export async function addEvent(event: Omit<CalendarEvent, 'id'>) {
 
 export async function updateEvent(event: CalendarEvent) {
   const supabase = createClient();
-  const isAdmin = await isAdminUser();
-  if (!isAdmin) {
-      throw new Error('You must be an admin to update events.');
-  }
   
   if (!event.id) {
       throw new Error("Event ID is required for update.");
@@ -88,7 +63,7 @@ export async function updateEvent(event: CalendarEvent) {
   
     if (error) {
       console.error('Error updating event:', error);
-      throw new Error('Failed to update event.');
+      throw new Error('Failed to update event. Ensure you are logged in as an admin.');
     }
 
   revalidatePath('/');
@@ -96,16 +71,11 @@ export async function updateEvent(event: CalendarEvent) {
 
 export async function deleteEvent(id: number) {
   const supabase = createClient();
-  const isAdmin = await isAdminUser();
-  if (!isAdmin) {
-      throw new Error('You must be an admin to delete events.');
-  }
-
   const { error } = await supabase.from('events').delete().eq('id', id);
 
   if (error) {
     console.error('Error deleting event:', error);
-    throw new Error('Failed to delete event.');
+    throw new Error('Failed to delete event. Ensure you are logged in as an admin.');
   }
 
   revalidatePath('/');

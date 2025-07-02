@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import Link from 'next/link';
-import { isAdminUser } from '@/app/actions';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,7 +20,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
-  // This check is the most important part. It verifies if the environment variables are loaded.
   const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -30,7 +28,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -41,29 +39,18 @@ export default function LoginPage() {
         return;
       }
 
-      if (data.user) {
-          const isAdmin = await isAdminUser();
-          if (isAdmin) {
-              router.push('/');
-              router.refresh();
-              return;
-          } else {
-              await supabase.auth.signOut();
-              setError('Access denied. You are not an administrator.');
-          }
-      } else {
-          setError("Sign-in successful, but user data could not be retrieved.");
-      }
+      // If sign-in is successful, the user is an admin. Redirect to the main page.
+      router.push('/');
+      router.refresh();
+
     } catch (e: any) {
       console.error(e);
-      // This more specific error message helps diagnose the "Failed to fetch" issue.
-      setError("Could not connect to the server. Please ensure your Supabase credentials are correct in .env.local and that you have restarted the application server.");
+      setError("Could not connect to the server. Please ensure your Supabase credentials are correct and that you have restarted the application server.");
     }
 
     setLoading(false);
   };
   
-  // If Supabase is not configured, we show a very explicit error message and hide the form.
   if (!isSupabaseConfigured) {
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
