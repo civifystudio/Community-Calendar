@@ -255,7 +255,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                   key={index}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="relative"
+                  className="relative aspect-square"
                 >
                   <Button
                     variant={isSelected ? 'default' : isToday ? 'secondary' : 'ghost'}
@@ -266,7 +266,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                     }}
                     disabled={!day}
                     className={`
-                      w-full aspect-square p-0 rounded-md relative
+                      w-full h-full p-0 rounded-md relative
                       ${isSelected ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
                       ${isToday && !isSelected ? 'bg-gray-800' : ''}
                       ${!day ? 'invisible' : ''}
@@ -710,7 +710,7 @@ export default function CalendarPage() {
     // Render a loading state or skeleton until the date is set on the client.
     // This ensures server and client render the same initial HTML.
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 w-full">
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 w-full">
           {/* You can add a more sophisticated loader or skeleton here if desired */}
         </div>
     );
