@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -74,7 +75,7 @@ export async function saveEvent(formData: FormData): Promise<CalendarEvent | nul
         details: formData.get('details') as string,
         start_hour: Number(formData.get('start_hour')),
         end_hour: Number(formData.get('end_hour')),
-        external_link: formData.get('external_link') as string,
+        external_link: (formData.get('external_link') as string) || null,
     };
     
     if (eventId) {
