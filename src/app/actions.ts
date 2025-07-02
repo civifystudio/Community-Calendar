@@ -11,7 +11,6 @@ export interface CalendarEvent {
   start_hour: number;
   end_hour: number;
   link?: string;
-  color: string;
 }
 
 export async function getEvents() {
@@ -74,7 +73,6 @@ export async function saveEvent(event: Partial<CalendarEvent>): Promise<Calendar
         details: event.details,
         start_hour: event.start_hour,
         end_hour: event.end_hour,
-        color: event.color || 'blue',
     };
 
     // Server-side validation

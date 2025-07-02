@@ -62,18 +62,6 @@ interface EventsByDate {
   [key: number]: CalendarEvent[];
 }
 
-const eventColorClasses = {
-  blue: { bg: 'bg-event-blue-bg', text: 'text-event-blue-fg', border: 'border-event-blue-border' },
-  green: { bg: 'bg-event-green-bg', text: 'text-event-green-fg', border: 'border-event-green-border' },
-  purple: { bg: 'bg-event-purple-bg', text: 'text-event-purple-fg', border: 'border-event-purple-border' },
-  red: { bg: 'bg-event-red-bg', text: 'text-event-red-fg', border: 'border-event-red-border' },
-  default: { bg: 'bg-secondary', text: 'text-secondary-foreground', border: 'border-border' },
-};
-
-const getEventColor = (colorName: string | undefined) => {
-    return (eventColorClasses as any)[colorName || 'default'] || eventColorClasses.default;
-}
-
 interface ViewProps {
   allEvents: CalendarEvent[];
   events: EventsByDate;
@@ -97,7 +85,6 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
     const [currentEventData, setCurrentEventData] = useState<Partial<CalendarEvent>>({
         title: '',
         details: '',
-        color: 'blue',
         ...event,
         date: event?.date ? format(parseISO(event.date), 'yyyy-MM-dd') : format(date, 'yyyy-MM-dd'),
         start_hour: event?.start_hour || 9,
@@ -354,10 +341,7 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                     >
                       {day}
                       {dayEvents && dayEvents.length > 0 && (
-                         <div className={cn(
-                            `absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full`,
-                             getEventColor(dayEvents[0].color).bg
-                         )}></div>
+                         <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary"></div>
                       )}
                     </Button>
                   </motion.div>
@@ -541,10 +525,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                       {day}
                     </Button>
                     {day && events[day] && events[day].length > 0 && (
-                      <div className={cn(
-                        `absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full`,
-                        getEventColor(events[day][0].color).bg
-                      )}></div>
+                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary"></div>
                     )}
                  </motion.div>
               )})}
@@ -601,7 +582,6 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
 
                                const top = ((eventStart - gridStartHour) / totalHoursInGrid) * 100;
                                const height = ((eventEnd - eventStart) / totalHoursInGrid) * 100;
-                               const color = getEventColor(event.color);
                                
                                return (
                                  <motion.div
@@ -625,7 +605,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                                         setDialogEvent([event]);
                                    }}
                                   >
-                                   <div className={cn("h-full p-2 rounded-lg text-xs flex flex-col border hover:bg-accent transition-colors", color.bg, color.text, color.border)}>
+                                   <div className="h-full p-2 rounded-lg text-xs flex flex-col border bg-primary/10 border-primary/20 text-primary hover:bg-primary/20 transition-colors">
                                      <span className="font-bold truncate">{event.title}</span>
                                      <span className='truncate'>{event.details}</span>
                                    </div>
@@ -672,14 +652,6 @@ const EventDetailsContent = ({ events, onEdit, onCopyLink }: { events: CalendarE
                                 <Share2 className="mr-2 h-4 w-4"/>
                                 View Page
                             </Link>
-                        </Button>
-                    )}
-                    {event.external_link && (
-                        <Button asChild size="sm" variant="outline">
-                        <a href={event.external_link} target="_blank" rel="noopener noreferrer">
-                            <LinkIcon className="mr-2 h-4 w-4" />
-                            Event Link
-                        </a>
                         </Button>
                     )}
                     {event.link && (
