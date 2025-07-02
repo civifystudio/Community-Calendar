@@ -23,7 +23,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from '@/components/ui/sheet';
 import {
   ChevronLeft,
@@ -38,6 +37,7 @@ import {
   Clock,
   Link as LinkIcon,
   MapPin,
+  PartyPopper,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays, parseISO } from 'date-fns';
@@ -51,10 +51,16 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { FormattedText } from '@/components/formatted-text';
 import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
+import ReactConfetti from 'react-confetti';
 
 const EventMap = dynamic(() => import('@/components/event-map').then(mod => mod.default), {
   ssr: false,
   loading: () => <div className="w-full h-[250px] bg-muted rounded-md animate-pulse" />
+});
+
+const EventFormMap = dynamic(() => import('@/components/event-form-map').then(mod => mod.default), {
+  ssr: false,
+  loading: () => <div className="w-full h-[200px] bg-muted rounded-md animate-pulse" />
 });
 
 
@@ -83,252 +89,238 @@ interface ViewProps {
   isMobile: boolean | undefined;
 }
 
-const EventPagePreview = ({ event, imagePreviewUrl }: { event: Partial<CalendarEvent>, imagePreviewUrl: string | null }) => {
-  const formatTime = (hour: number) => {
-    const h = Math.floor(hour);
-    const m = Math.round((hour - h) * 60);
-    const minutes = m.toString().padStart(2, '0');
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const formattedHour = h % 12 || 12;
-    return `${formattedHour}:${minutes} ${ampm}`;
-  };
+const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (formData: FormData) => Promise<CalendarEvent | null>, onCancel: () => void, isAdmin: boolean, onDelete: (id: number) => void }) => {
+    const [step, setStep] = useState(1);
+    const [isSaving, setIsSaving] = useState(false);
+    const [newlyCreatedEvent, setNewlyCreatedEvent] = useState<CalendarEvent | null>(null);
 
-  const eventDate = event.date ? parseISO(event.date) : new Date();
-  
-  const title = event.title || 'Your Event Title';
-  const details = event.details || 'Your event details will appear here.';
-  const start_hour = event.start_hour ?? 9;
-  const end_hour = event.end_hour ?? 10;
-  const external_link = event.external_link || '';
-  const imageUrl = imagePreviewUrl || event.image_url || `https://placehold.co/800x600.png`;
-  const location_name = event.location_name || '';
-  const latitude = event.latitude;
-  const longitude = event.longitude;
+    const [currentEventData, setCurrentEventData] = useState<Partial<CalendarEvent>>({
+        title: '',
+        details: '',
+        external_link: '',
+        location_name: '',
+        latitude: undefined,
+        longitude: undefined,
+        image_url: null,
+        ...event,
+        date: event?.date ? format(parseISO(event.date), 'yyyy-MM-dd') : format(date, 'yyyy-MM-dd'),
+        start_hour: event?.start_hour || 9,
+        end_hour: event?.end_hour || 10,
+    });
+    
+    const [imageFile, setImageFile] = useState<File | null>(null);
 
-  return (
-    <div className="bg-background rounded-lg h-full overflow-y-auto p-1">
-        <Card className="w-full h-full bg-card text-card-foreground border-none shadow-none flex flex-col">
-            <CardHeader className="p-0">
-                <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-muted">
-                    <Image
-                        src={imageUrl}
-                        alt="Event flyer preview"
-                        layout="fill"
-                        objectFit="cover"
-                        data-ai-hint="event flyer"
-                    />
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-4 p-4 flex-grow flex flex-col">
-                <CardTitle className="text-2xl font-bold">{title}</CardTitle>
-                <Separator />
-                <div className="grid grid-cols-1 gap-4 text-base">
-                    <div className="flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-muted-foreground"/>
-                        <span>{format(eventDate, 'EEEE, MMMM d, yyyy')}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Clock className="h-5 w-5 text-muted-foreground"/>
-                        <span>{formatTime(start_hour)} - {formatTime(end_hour)}</span>
-                    </div>
-                </div>
-                <div className="space-y-2 flex-grow overflow-y-auto pr-2">
-                    <h3 className="text-xl font-semibold">About this event</h3>
-                    <div className="text-muted-foreground">
-                        <FormattedText text={details} />
-                    </div>
-                    {location_name && latitude && longitude && (
-                        <div className="space-y-2 pt-4">
-                            <h3 className="text-xl font-semibold">Location</h3>
-                            <div className="flex items-center gap-3">
-                                <MapPin className="h-5 w-5 text-muted-foreground"/>
-                                <span>{location_name}</span>
-                            </div>
-                            <div className="rounded-md overflow-hidden border">
-                                <EventMap position={[latitude, longitude]} locationName={location_name} />
-                            </div>
-                        </div>
-                    )}
-                </div>
-                {external_link && (
-                    <div className="pt-4 mt-auto">
-                        <Button asChild className="w-full" disabled>
-                            <a href={external_link}>
-                                <LinkIcon className="mr-2 h-4 w-4" />
-                                Visit Event Page
-                            </a>
-                        </Button>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    </div>
-  );
-};
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setCurrentEventData(prev => ({ ...prev, [name]: value }));
+    };
 
-
-const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (formData: FormData) => void, onCancel: () => void, isAdmin: boolean, onDelete: (id: number) => void }) => {
-    const [title, setTitle] = useState(event?.title || '');
-    const [details, setDetails] = useState(event?.details || '');
-    const [externalLink, setExternalLink] = useState(event?.external_link || '');
-    const [selectedDate, setSelectedDate] = useState<Date>(event?.date ? parseISO(event.date) : date);
-    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-    const [locationName, setLocationName] = useState(event?.location_name || '');
-    const [latitude, setLatitude] = useState(event?.latitude?.toString() || '');
-    const [longitude, setLongitude] = useState(event?.longitude?.toString() || '');
-
-    useEffect(() => {
-        // Clean up the object URL to avoid memory leaks
-        return () => {
-            if (imagePreviewUrl) {
-                URL.revokeObjectURL(imagePreviewUrl);
-            }
-        };
-    }, [imagePreviewUrl]);
+    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        const timeAsDecimal = (timeString: string): number => {
+            const [hours, minutes] = timeString.split(':').map(Number);
+            if (isNaN(hours) || isNaN(minutes)) return 0;
+            return hours + minutes / 60;
+        }
+        setCurrentEventData(prev => ({ ...prev, [name]: timeAsDecimal(value) }));
+    };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (imagePreviewUrl) {
-            URL.revokeObjectURL(imagePreviewUrl);
-        }
         if (file) {
-            setImagePreviewUrl(URL.createObjectURL(file));
-        } else {
-            setImagePreviewUrl(null);
+            setImageFile(file);
+            setCurrentEventData(prev => ({ ...prev, image_url: URL.createObjectURL(file) }));
+        }
+    };
+    
+    const handleSubmit = async () => {
+        setIsSaving(true);
+        const formData = new FormData();
+        Object.entries(currentEventData).forEach(([key, value]) => {
+            if (value !== null && value !== undefined) {
+                formData.append(key, String(value));
+            }
+        });
+
+        if (imageFile) {
+            formData.set('image_url', imageFile);
+        } else if (event?.image_url) {
+            formData.set('existing_image_url', event.image_url);
+        }
+
+        if (event?.id) {
+          formData.set('id', String(event.id));
+        }
+
+        const result = await onSave(formData);
+        setIsSaving(false);
+        if (result) {
+            setNewlyCreatedEvent(result);
+            setStep(3); // Move to success step
         }
     };
 
-    const decimalToTimeString = (decimalHour: number): string => {
-        if (isNaN(decimalHour)) return "09:00";
+    const decimalToTimeString = (decimalHour: number | undefined): string => {
+        if (decimalHour === undefined || isNaN(decimalHour)) return "09:00";
         const hours = Math.floor(decimalHour);
         const minutes = Math.round((decimalHour - hours) * 60);
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
 
-    const timeStringToDecimal = (timeString: string): number => {
-        const [hours, minutes] = timeString.split(':').map(Number);
-        if (isNaN(hours) || isNaN(minutes)) return 0;
-        return hours + minutes / 60;
-    }
-
-    const [startTime, setStartTime] = useState(decimalToTimeString(event?.start_hour || 9));
-    const [endTime, setEndTime] = useState(decimalToTimeString(event?.end_hour || 10));
-  
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const formData = new FormData(e.currentTarget);
-      formData.set('date', format(selectedDate, 'yyyy-MM-dd'));
-      formData.set('start_hour', String(timeStringToDecimal(startTime)));
-      formData.set('end_hour', String(timeStringToDecimal(endTime)));
-       if (event?.id) {
-          formData.set('id', String(event.id));
-        }
-        if (event?.image_url && !formData.has('image_url')) {
-          const imageInput = e.currentTarget.elements.namedItem('image_url') as HTMLInputElement;
-          if (!imageInput || !imageInput.files || imageInput.files.length === 0) {
-            formData.set('existing_image_url', event.image_url);
-          }
-        }
-      onSave(formData);
+    const { toast } = useToast();
+    const copyLink = (link?: string | null) => {
+        if (!link) return;
+        const fullUrl = window.location.origin + link;
+        navigator.clipboard.writeText(fullUrl);
+        toast({
+          title: "Link Copied!",
+          description: "The event link has been copied to your clipboard.",
+        });
     };
 
-    const previewEventData: Partial<CalendarEvent> = {
-        ...event,
-        title,
-        details,
-        external_link: externalLink,
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        start_hour: timeStringToDecimal(startTime),
-        end_hour: timeStringToDecimal(endTime),
-        location_name: locationName,
-        latitude: latitude ? parseFloat(latitude) : undefined,
-        longitude: longitude ? parseFloat(longitude) : undefined,
-    };
-  
-    return (
-        <div className="grid md:grid-cols-2 gap-x-8 h-full">
-            <div className="flex flex-col overflow-hidden">
-                <form onSubmit={handleSubmit} className="flex flex-col h-full">
-                    <DialogHeader>
-                        <DialogTitle>{event?.id ? 'Edit Event' : 'Add Event'}</DialogTitle>
-                        <DialogDescription>Fill in the details for your event. See a live preview on the right.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-6 grid gap-y-6 flex-grow overflow-y-auto pr-4 -mr-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="title">Title</Label>
-                            <Input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="details">Details</Label>
-                            <Textarea id="details" name="details" value={details} onChange={(e) => setDetails(e.target.value)} required rows={5} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="location_name">Location Name</Label>
-                            <Input id="location_name" name="location_name" value={locationName} onChange={(e) => setLocationName(e.target.value)} placeholder="e.g., Central Park" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
+    const renderStep = () => {
+        switch (step) {
+            case 1:
+                return (
+                    <div className="space-y-6">
+                        <DialogHeader>
+                            <DialogTitle>{event?.id ? 'Step 1: Edit Event Details' : 'Step 1: Add Event Details'}</DialogTitle>
+                            <DialogDescription>Fill in the main details for your event.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="latitude">Latitude</Label>
-                                <Input id="latitude" name="latitude" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="e.g., 40.785091" />
+                                <Label htmlFor="title">Title</Label>
+                                <Input id="title" name="title" value={currentEventData.title} onChange={handleInputChange} required />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="longitude">Longitude</Label>
-                                <Input id="longitude" name="longitude" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="e.g., -73.968285" />
+                                <Label htmlFor="details">Details</Label>
+                                <Textarea id="details" name="details" value={currentEventData.details} onChange={handleInputChange} required rows={4} />
                             </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="external_link">External Link</Label>
-                            <Input id="external_link" name="external_link" value={externalLink} onChange={(e) => setExternalLink(e.target.value)} placeholder="https://example.com/tickets" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="image_url">Event Flyer</Label>
-                            <Input id="image_url" name="image_url" type="file" accept="image/*" onChange={handleImageChange} />
-                            {event?.image_url && !imagePreviewUrl && (
-                                <div className="text-sm text-muted-foreground">
-                                    Current image: <a href={event.image_url} target="_blank" rel="noreferrer" className="underline">View</a>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="start_hour">Start Time</Label>
+                                    <Input id="start_hour" name="start_hour" type="time" value={decimalToTimeString(currentEventData.start_hour)} onChange={handleTimeChange} required />
                                 </div>
-                            )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="startTime">Start Time</Label>
-                                <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
+                                <div className="space-y-2">
+                                    <Label htmlFor="end_hour">End Time</Label>
+                                    <Input id="end_hour" name="end_hour" type="time" value={decimalToTimeString(currentEventData.end_hour)} onChange={handleTimeChange} required />
+                                </div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="external_link">External Link</Label>
+                                <Input id="external_link" name="external_link" value={currentEventData.external_link || ''} onChange={handleInputChange} placeholder="https://example.com/tickets" />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="endTime">End Time</Label>
-                                <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
+                                <Label htmlFor="image_url">Event Flyer</Label>
+                                <Input id="image_url" name="image_url" type="file" accept="image/*" onChange={handleImageChange} />
+                                {currentEventData.image_url && (
+                                    <div className="mt-2">
+                                        <Image src={currentEventData.image_url} alt="Flyer preview" width={100} height={100} className="rounded-md object-cover" />
+                                    </div>
+                                )}
+                            </div>
+                             <div className="space-y-2">
+                                <Label>Date</Label>
+                                <Calendar
+                                    mode="single"
+                                    selected={currentEventData.date ? parseISO(currentEventData.date) : new Date()}
+                                    onSelect={(d) => d && setCurrentEventData(prev => ({...prev, date: format(d, 'yyyy-MM-dd')}))}
+                                    className="rounded-md border"
+                                />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Date</Label>
-                            <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={(d) => d && setSelectedDate(d)}
-                                className="rounded-md border w-full"
+                        <DialogFooter>
+                            <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+                            <Button type="button" onClick={() => setStep(2)}>Next</Button>
+                        </DialogFooter>
+                    </div>
+                );
+            case 2:
+                return (
+                    <div className="space-y-6">
+                        <DialogHeader>
+                            <DialogTitle>Step 2: Add Location</DialogTitle>
+                            <DialogDescription>Add a location and click the map to set coordinates.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="location_name">Location Name</Label>
+                                <Input id="location_name" name="location_name" value={currentEventData.location_name || ''} onChange={handleInputChange} placeholder="e.g., Central Park" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="latitude">Latitude</Label>
+                                    <Input id="latitude" name="latitude" type="number" step="any" value={currentEventData.latitude || ''} onChange={handleInputChange} placeholder="e.g., 40.785091" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="longitude">Longitude</Label>
+                                    <Input id="longitude" name="longitude" type="number" step="any" value={currentEventData.longitude || ''} onChange={handleInputChange} placeholder="e.g., -73.968285" />
+                                </div>
+                            </div>
+                            <EventFormMap 
+                                position={currentEventData.latitude && currentEventData.longitude ? [currentEventData.latitude, currentEventData.longitude] : [35.207, -118.828]} 
+                                onLocationSelect={({lat, lng}) => {
+                                    setCurrentEventData(prev => ({...prev, latitude: lat, longitude: lng}))
+                                }} 
                             />
                         </div>
+                        <DialogFooter className="flex justify-between w-full">
+                           <Button type="button" variant="secondary" onClick={() => setStep(1)}>Back</Button>
+                           <Button type="button" onClick={handleSubmit} disabled={isSaving}>
+                               {isSaving ? 'Saving...' : 'Save Event'}
+                           </Button>
+                        </DialogFooter>
                     </div>
-                    <DialogFooter className="mt-auto pt-6 border-t flex justify-between w-full">
-                        <div>
-                            {isAdmin && event?.id && (
-                                <Button type="button" variant="destructive" onClick={() => onDelete(event.id!)}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                );
+            case 3:
+                return (
+                    <div className="flex flex-col items-center justify-center text-center space-y-6 h-full">
+                        <ReactConfetti recycle={false} numberOfPieces={200} />
+                        <PartyPopper className="h-16 w-16 text-primary" />
+                        <DialogHeader>
+                            <DialogTitle>Success!</DialogTitle>
+                            <DialogDescription>Your event has been saved successfully.</DialogDescription>
+                        </DialogHeader>
+                        {newlyCreatedEvent?.link && (
+                            <div className="flex gap-2">
+                                <Button asChild variant="outline">
+                                    <Link href={newlyCreatedEvent.link}>View Event Page</Link>
                                 </Button>
-                            )}
-                        </div>
-                        <div className="flex gap-2">
-                            <DialogClose asChild>
-                                <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-                            </DialogClose>
-                            <Button type="submit">Save Event</Button>
-                        </div>
-                    </DialogFooter>
-                </form>
-            </div>
-            <div className="hidden md:block bg-muted/50 rounded-lg overflow-hidden">
-                <EventPagePreview event={previewEventData} imagePreviewUrl={imagePreviewUrl} />
-            </div>
+                                <Button onClick={() => copyLink(newlyCreatedEvent.link)}>
+                                    <Copy className="mr-2 h-4 w-4" /> Copy Link
+                                </Button>
+                            </div>
+                        )}
+                        <DialogFooter className="w-full">
+                            <Button type="button" onClick={onCancel} className="w-full">Done</Button>
+                        </DialogFooter>
+                    </div>
+                );
+            default: return null;
+        }
+    };
+
+    return (
+        <div className="flex flex-col h-full overflow-hidden p-6">
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={step}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -50 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col flex-grow overflow-y-auto pr-4 -mr-4"
+                >
+                    {renderStep()}
+                </motion.div>
+            </AnimatePresence>
+            {isAdmin && event?.id && step !== 3 && (
+                 <div className="mt-auto pt-6 border-t">
+                    <Button type="button" variant="destructive" onClick={() => onDelete(event.id!)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete This Event
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };
@@ -845,16 +837,16 @@ export default function CalendarPage() {
       }
   };
   
-  const handleSaveEvent = async (formData: FormData) => {
+  const handleSaveEvent = async (formData: FormData): Promise<CalendarEvent | null> => {
       try {
-        await saveEvent(formData);
+        const result = await saveEvent(formData);
         toast({ title: "Event saved successfully!" });
         await fetchAndSetEvents();
-        setIsFormOpen(false);
-        setEditingEvent(null);
+        return result;
       } catch(e) {
         const error = e as Error;
         toast({ title: "Error", description: error.message, variant: "destructive" });
+        return null;
       }
   };
 
@@ -872,6 +864,11 @@ export default function CalendarPage() {
         }
     }
   };
+
+  const closeForm = () => {
+      setIsFormOpen(false);
+      setEditingEvent(null);
+  }
 
   const formatTime = (hour: number) => {
     const h = Math.floor(hour);
@@ -983,13 +980,13 @@ export default function CalendarPage() {
           )}
       </AnimatePresence>
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-6xl max-h-[85vh] h-full p-0">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] h-full p-0 flex flex-col">
             {editingEvent && selectedDate && (
                 <EventForm 
                   event={editingEvent} 
                   date={selectedDate} 
                   onSave={handleSaveEvent} 
-                  onCancel={() => setIsFormOpen(false)}
+                  onCancel={closeForm}
                   isAdmin={isAdmin}
                   onDelete={handleDeleteEvent}
                 />
