@@ -36,7 +36,8 @@ import {
   Share2,
   Copy,
   Clock,
-  Link as LinkIcon
+  Link as LinkIcon,
+  MapPin,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays, parseISO } from 'date-fns';
@@ -49,6 +50,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FormattedText } from '@/components/formatted-text';
 import { cn } from '@/lib/utils';
+import dynamic from 'next/dynamic';
+
+const EventMap = dynamic(() => import('@/components/event-map').then(mod => mod.default), {
+  ssr: false,
+  loading: () => <div className="w-full h-[250px] bg-muted rounded-md animate-pulse" />
+});
+
 
 interface LaidOutEvent extends CalendarEvent {
   left: number;
@@ -93,6 +101,9 @@ const EventPagePreview = ({ event, imagePreviewUrl }: { event: Partial<CalendarE
   const end_hour = event.end_hour ?? 10;
   const external_link = event.external_link || '';
   const imageUrl = imagePreviewUrl || event.image_url || `https://placehold.co/800x600.png`;
+  const location_name = event.location_name || '';
+  const latitude = event.latitude;
+  const longitude = event.longitude;
 
   return (
     <div className="bg-background rounded-lg h-full overflow-y-auto p-1">
@@ -121,11 +132,23 @@ const EventPagePreview = ({ event, imagePreviewUrl }: { event: Partial<CalendarE
                         <span>{formatTime(start_hour)} - {formatTime(end_hour)}</span>
                     </div>
                 </div>
-                <div className="space-y-2 flex-grow">
+                <div className="space-y-2 flex-grow overflow-y-auto pr-2">
                     <h3 className="text-xl font-semibold">About this event</h3>
-                    <div className="text-muted-foreground overflow-y-auto max-h-48">
+                    <div className="text-muted-foreground">
                         <FormattedText text={details} />
                     </div>
+                    {location_name && latitude && longitude && (
+                        <div className="space-y-2 pt-4">
+                            <h3 className="text-xl font-semibold">Location</h3>
+                            <div className="flex items-center gap-3">
+                                <MapPin className="h-5 w-5 text-muted-foreground"/>
+                                <span>{location_name}</span>
+                            </div>
+                            <div className="rounded-md overflow-hidden border">
+                                <EventMap position={[latitude, longitude]} locationName={location_name} />
+                            </div>
+                        </div>
+                    )}
                 </div>
                 {external_link && (
                     <div className="pt-4 mt-auto">
@@ -150,6 +173,9 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
     const [externalLink, setExternalLink] = useState(event?.external_link || '');
     const [selectedDate, setSelectedDate] = useState<Date>(event?.date ? parseISO(event.date) : date);
     const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+    const [locationName, setLocationName] = useState(event?.location_name || '');
+    const [latitude, setLatitude] = useState(event?.latitude?.toString() || '');
+    const [longitude, setLongitude] = useState(event?.longitude?.toString() || '');
 
     useEffect(() => {
         // Clean up the object URL to avoid memory leaks
@@ -214,6 +240,9 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
         date: format(selectedDate, 'yyyy-MM-dd'),
         start_hour: timeStringToDecimal(startTime),
         end_hour: timeStringToDecimal(endTime),
+        location_name: locationName,
+        latitude: latitude ? parseFloat(latitude) : undefined,
+        longitude: longitude ? parseFloat(longitude) : undefined,
     };
   
     return (
@@ -232,6 +261,20 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
                         <div className="space-y-2">
                             <Label htmlFor="details">Details</Label>
                             <Textarea id="details" name="details" value={details} onChange={(e) => setDetails(e.target.value)} required rows={5} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="location_name">Location Name</Label>
+                            <Input id="location_name" name="location_name" value={locationName} onChange={(e) => setLocationName(e.target.value)} placeholder="e.g., Central Park" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="latitude">Latitude</Label>
+                                <Input id="latitude" name="latitude" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="e.g., 40.785091" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="longitude">Longitude</Label>
+                                <Input id="longitude" name="longitude" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="e.g., -73.968285" />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="external_link">External Link</Label>
@@ -884,6 +927,17 @@ export default function CalendarPage() {
             <h3 className="font-semibold text-lg">{event.title}</h3>
             <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
             <FormattedText text={event.details} className="text-sm text-muted-foreground mt-1" />
+            {event.location_name && event.latitude && event.longitude && (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-semibold">{event.location_name}</p>
+                </div>
+                <div className="rounded-md overflow-hidden border">
+                    <EventMap position={[event.latitude, event.longitude]} locationName={event.location_name} />
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2 pt-2">
                 {isAdmin && <Button size="sm" variant="outline" onClick={() => { onClose(); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
                 {event.link && (
@@ -964,7 +1018,7 @@ export default function CalendarPage() {
       )}
 
       {!isMobile && view === 'month' && (
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center hidden md:block">
           {isAdmin ? (
             <Button variant="link" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground hover:no-underline">Admin Logout</Button>
           ) : (

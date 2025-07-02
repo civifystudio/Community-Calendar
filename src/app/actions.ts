@@ -13,6 +13,9 @@ export interface CalendarEvent {
   image_url?: string | null;
   external_link?: string | null;
   link?: string;
+  location_name?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export async function getEvents() {
@@ -82,6 +85,9 @@ export async function saveEvent(formData: FormData): Promise<CalendarEvent | nul
         end_hour: Number(formData.get('end_hour')),
         external_link: formData.get('external_link') as string,
         image_url: formData.get('existing_image_url') as string || null,
+        location_name: formData.get('location_name') as string || null,
+        latitude: formData.get('latitude') ? Number(formData.get('latitude')) : null,
+        longitude: formData.get('longitude') ? Number(formData.get('longitude')) : null,
     };
     
     const imageFile = formData.get('image_url') as File;

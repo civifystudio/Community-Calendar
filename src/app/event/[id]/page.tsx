@@ -5,11 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
-import { Calendar, Clock, ArrowLeft, Link as LinkIcon } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, Link as LinkIcon, MapPin } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { FormattedText } from '@/components/formatted-text';
+import dynamic from 'next/dynamic';
+
+const EventMap = dynamic(() => import('@/components/event-map').then(mod => mod.default), { 
+    ssr: false,
+    loading: () => <div className="w-full h-[250px] bg-muted rounded-md animate-pulse" /> 
+});
+
 
 export default async function EventPage({ params }: { params: { id: string } }) {
   const eventId = Number(params.id);
@@ -66,20 +73,32 @@ export default async function EventPage({ params }: { params: { id: string } }) 
                     <span>{formatTime(event.start_hour)} - {formatTime(event.end_hour)}</span>
                 </div>
             </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold">About this event</h3>
-            <FormattedText text={event.details} className="text-muted-foreground" />
-          </div>
-          {event.external_link && (
-            <div className="pt-4">
-                <Button asChild className="w-full">
-                    <a href={event.external_link} target="_blank" rel="noopener noreferrer">
-                        <LinkIcon className="mr-2 h-4 w-4" />
-                        Visit Event Page
-                    </a>
-                </Button>
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold">About this event</h3>
+              <FormattedText text={event.details} className="text-muted-foreground" />
             </div>
-        )}
+            {event.location_name && event.latitude && event.longitude && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold">Location</h3>
+                <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground"/>
+                    <span>{event.location_name}</span>
+                </div>
+                <div className="rounded-md overflow-hidden border">
+                    <EventMap position={[event.latitude, event.longitude]} locationName={event.location_name} />
+                </div>
+              </div>
+            )}
+            {event.external_link && (
+                <div className="pt-4">
+                    <Button asChild className="w-full">
+                        <a href={event.external_link} target="_blank" rel="noopener noreferrer">
+                            <LinkIcon className="mr-2 h-4 w-4" />
+                            Visit Event Page
+                        </a>
+                    </Button>
+                </div>
+            )}
         </CardContent>
       </Card>
       <div className="mt-8">
