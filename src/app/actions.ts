@@ -96,7 +96,7 @@ export async function saveEvent(event: Partial<CalendarEvent>): Promise<Calendar
         
         if (error) {
             console.error('Error updating event:', error);
-            throw new Error('Failed to update event.');
+            throw new Error(`Failed to update event. Database error: ${error.message}`);
         }
         revalidatePath('/');
         revalidatePath(`/event/${eventId}`);
@@ -111,7 +111,7 @@ export async function saveEvent(event: Partial<CalendarEvent>): Promise<Calendar
 
         if (insertError) {
             console.error('Error adding event:', insertError);
-            throw new Error('Failed to add event.');
+            throw new Error(`Failed to add event. Database error: ${insertError.message}`);
         }
         
         const link = `/event/${newEvent.id}`;
@@ -135,11 +135,16 @@ export async function saveEvent(event: Partial<CalendarEvent>): Promise<Calendar
 
 export async function deleteEvent(id: number) {
   const supabase = createClient();
+  const isAdmin = await isAdminUser();
+  if (!isAdmin) {
+      throw new Error('You must have administrative privileges to delete an event.');
+  }
+
   const { error } = await supabase.from('events').delete().eq('id', id);
 
   if (error) {
     console.error('Error deleting event:', error);
-    throw new Error('Failed to delete event. You may not have administrative privileges.');
+    throw new Error(`Failed to delete event. Database error: ${error.message}`);
   }
 
   revalidatePath('/');
