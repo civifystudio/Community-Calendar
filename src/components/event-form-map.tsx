@@ -43,15 +43,22 @@ const EventFormMap = ({ position, onLocationSelect, className }: EventFormMapPro
   }
 
   return (
-    <MapContainer center={position} zoom={13} scrollWheelZoom={false} className={className} style={{ height: '200px', width: '100%', borderRadius: 'var(--radius)' }}>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <Marker position={position} icon={customIcon} />
-      <MapClickHandler onLocationSelect={onLocationSelect} />
-      <ChangeView center={position} />
-    </MapContainer>
+    <div className={className} style={{ height: '200px', width: '100%', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+      <MapContainer 
+        center={position} 
+        zoom={13} 
+        scrollWheelZoom={false} 
+        style={{ height: '100%', width: '100%' }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <Marker position={position} icon={customIcon} />
+        <MapClickHandler onLocationSelect={onLocationSelect} />
+        <ChangeView center={position} />
+      </MapContainer>
+    </div>
   );
 };
 
