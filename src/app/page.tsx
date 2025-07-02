@@ -268,8 +268,9 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                     onClick={() => {
                         if (dayDate) {
                             setSelectedDate(dayDate);
-                            if (isMobile && events[day]?.length > 0) {
-                                setDialogEvent(events[day]);
+                            const dayEvents = allEvents.filter(event => isSameDay(parseISO(event.date), dayDate));
+                            if (isMobile && dayEvents.length > 0) {
+                                setDialogEvent(dayEvents);
                             }
                         }
                     }}
@@ -409,7 +410,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="w-full flex-1 flex"
+      className="w-full max-w-7xl mx-auto flex-1 flex"
     >
       <div className="flex w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
         {/* Left Panel */}
