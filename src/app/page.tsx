@@ -199,8 +199,8 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
         <CardContent className="p-2 sm:p-4 md:p-6 flex flex-col gap-4">
           {/* HEADER */}
           <div className="flex justify-between items-center flex-wrap gap-y-2">
-              <div className="flex items-baseline gap-x-4">
-                  <h1 className="text-4xl sm:text-5xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
+              <h1 className="text-4xl sm:text-5xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
+              <div className="flex items-center gap-x-4">
                   <div className="flex items-center">
                       <h2 className="font-semibold text-xl text-muted-foreground">{format(displayDate, 'MMMM yyyy')}</h2>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-accent" onClick={handlePrevMonth}>
@@ -210,14 +210,14 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                           <ChevronRight className="w-4 h-4" />
                       </Button>
                   </div>
-              </div>
-              <div className="flex items-center gap-1 p-1 bg-secondary rounded-md">
-                  <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`h-8 w-8 hover:bg-accent ${view === 'month' ? 'bg-background' : ''}`}>
-                      <CalendarDays className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`h-8 w-8 hover:bg-accent ${view === 'week' ? 'bg-background' : ''}`}>
-                      <Columns3 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 p-1 bg-secondary rounded-md">
+                      <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`h-8 w-8 hover:bg-accent ${view === 'month' ? 'bg-background' : ''}`}>
+                          <CalendarDays className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`h-8 w-8 hover:bg-accent ${view === 'week' ? 'bg-background' : ''}`}>
+                          <Columns3 className="h-4 w-4" />
+                      </Button>
+                  </div>
               </div>
           </div>
 
