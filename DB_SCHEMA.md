@@ -10,17 +10,18 @@ This document outlines the recommended schema for the tables used by this applic
 
 This table stores all the calendar events.
 
-| Column Name  | Data Type | Constraints       | Description                                                                 |
-|--------------|-----------|-------------------|-----------------------------------------------------------------------------|
-| `id`         | `bigint`  | Primary Key, Identity | Unique identifier for each event.                                           |
-| `created_at` | `timestamptz`| `now()` default   | Timestamp of when the record was created.                                   |
-| `date`       | `date`    | Not Null          | The date of the event, e.g., `2024-12-25`.                                    |
-| `title`      | `text`    | Not Null          | The title of the event.                                                     |
-| `details`    | `text`    | Not Null          | A longer description for the event.                                         |
-| `start_hour` | `float8`  | Not Null          | **Crucial:** The start time, as a decimal. E.g., 9.5 for 9:30 AM. Must be `float8` or `numeric`. |
-| `end_hour`   | `float8`  | Not Null          | **Crucial:** The end time, as a decimal. E.g., 17.0 for 5:00 PM. Must be `float8` or `numeric`. |
-| `color`      | `text`    | Not Null          | The display color for the event (e.g., 'blue', 'green').                    |
-| `link`       | `text`    | Nullable          | A unique, shareable link to the event's detail page (e.g., `/event/123`).   |
+| Column Name     | Data Type     | Constraints       | Description                                                                 |
+|-----------------|---------------|-------------------|-----------------------------------------------------------------------------|
+| `id`            | `bigint`      | Primary Key, Identity | Unique identifier for each event.                                           |
+| `created_at`    | `timestamptz` | `now()` default   | Timestamp of when the record was created.                                   |
+| `date`          | `date`        | Not Null          | The date of the event, e.g., `2024-12-25`.                                    |
+| `title`         | `text`        | Not Null          | The title of the event.                                                     |
+| `details`       | `text`        | Not Null          | A longer description for the event.                                         |
+| `start_hour`    | `float8`      | Not Null          | **Crucial:** The start time, as a decimal. E.g., 9.5 for 9:30 AM. Must be `float8` or `numeric`. |
+| `end_hour`      | `float8`      | Not Null          | **Crucial:** The end time, as a decimal. E.g., 17.0 for 5:00 PM. Must be `float8` or `numeric`. |
+| `image_url`     | `text`        | Nullable          | URL to the event poster/flyer image.                                        |
+| `external_link` | `text`        | Nullable          | An external link for the event (e.g., tickets, info page).                  |
+| `link`          | `text`        | Nullable          | A unique, shareable link to the event's detail page (e.g., `/event/123`).   |
 
 ### Example SQL to Create `events` Table
 ```sql
@@ -37,7 +38,8 @@ CREATE TABLE public.events (
   details text NOT NULL,
   start_hour double precision NOT NULL,
   end_hour double precision NOT NULL,
-  color text NOT NULL,
+  image_url text,
+  external_link text,
   link text
 );
 

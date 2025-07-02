@@ -10,7 +10,8 @@ export interface CalendarEvent {
   details: string;
   start_hour: number;
   end_hour: number;
-  color: 'green' | 'blue' | 'purple' | 'yellow' | 'red' | 'orange' | 'pink' | 'teal';
+  image_url?: string | null;
+  external_link?: string | null;
   link?: string;
 }
 
@@ -64,67 +65,92 @@ export async function isAdminUser(): Promise<boolean> {
 }
 
 
-export async function addEvent(event: Omit<CalendarEvent, 'id' | 'link'>): Promise<CalendarEvent | null> {
+export async function saveEvent(formData: FormData): Promise<CalendarEvent | null> {
     const supabase = createClient();
-    
-    // 1. Insert the event without a link to get the new ID
-    const { data: newEvent, error: insertError } = await supabase
-        .from('events')
-        .insert([event])
-        .select()
-        .single();
-
-    if (insertError) {
-        console.error('Error adding event:', insertError);
-        throw new Error('Failed to add event. You may not have administrative privileges.');
+    const isAdmin = await isAdminUser();
+    if (!isAdmin) {
+        throw new Error('You must have administrative privileges to save an event.');
     }
 
-    if (!newEvent) {
-        throw new Error('Failed to retrieve new event after creation.');
+    const eventId = formData.get('id') ? Number(formData.get('id')) : null;
+    
+    const eventData: Omit<CalendarEvent, 'id' | 'link'> = {
+        date: formData.get('date') as string,
+        title: formData.get('title') as string,
+        details: formData.get('details') as string,
+        start_hour: Number(formData.get('start_hour')),
+        end_hour: Number(formData.get('end_hour')),
+        external_link: formData.get('external_link') as string,
+        image_url: formData.get('existing_image_url') as string || null,
+    };
+    
+    const imageFile = formData.get('image_url') as File;
+    
+    if (imageFile && imageFile.size > 0) {
+        const filePath = `${Date.now()}_${imageFile.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('events')
+            .upload(filePath, imageFile);
+        
+        if (uploadError) {
+            console.error('Error uploading image:', uploadError);
+            throw new Error('Failed to upload image.');
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('events')
+            .getPublicUrl(filePath);
+        
+        eventData.image_url = publicUrl;
     }
 
-    // 2. Update the event with the generated link
-    const link = `/event/${newEvent.id}`;
-    const { data: updatedEvent, error: updateError } = await supabase
-        .from('events')
-        .update({ link })
-        .eq('id', newEvent.id)
-        .select()
-        .single();
-    
-    if (updateError) {
-        console.error('Error updating event with link:', updateError);
-        // Event was created but link failed. Still revalidate.
+    if (eventId) {
+        // Update
+        const { data, error } = await supabase
+            .from('events')
+            .update(eventData)
+            .eq('id', eventId)
+            .select()
+            .single();
+        
+        if (error) {
+            console.error('Error updating event:', error);
+            throw new Error('Failed to update event.');
+        }
+        revalidatePath('/');
+        revalidatePath(`/event/${eventId}`);
+        return data;
+    } else {
+        // Add
+        const { data: newEvent, error: insertError } = await supabase
+            .from('events')
+            .insert([eventData])
+            .select()
+            .single();
+
+        if (insertError) {
+            console.error('Error adding event:', insertError);
+            throw new Error('Failed to add event.');
+        }
+        
+        const link = `/event/${newEvent.id}`;
+        const { data: updatedEvent, error: updateError } = await supabase
+            .from('events')
+            .update({ link })
+            .eq('id', newEvent.id)
+            .select()
+            .single();
+        
+        if (updateError) {
+            console.error('Error updating event with link:', updateError);
+        }
+
         revalidatePath('/');
         revalidatePath(`/event/${newEvent.id}`);
-        throw new Error('Event created, but failed to set shareable link.');
+        return updatedEvent;
     }
-    
-    revalidatePath('/');
-    revalidatePath(`/event/${newEvent.id}`);
-    return updatedEvent;
 }
 
-export async function updateEvent(event: CalendarEvent) {
-  const supabase = createClient();
-  
-  if (!event.id) {
-      throw new Error("Event ID is required for update.");
-  }
-
-  const { id, ...updateData } = event;
-  const link = `/event/${id}`;
-
-  const { error } = await supabase.from('events').update({...updateData, link }).eq('id', id);
-  
-    if (error) {
-      console.error('Error updating event:', error);
-      throw new Error('Failed to update event. You may not have administrative privileges.');
-    }
-
-  revalidatePath('/');
-  revalidatePath(`/event/${id}`);
-}
 
 export async function deleteEvent(id: number) {
   const supabase = createClient();

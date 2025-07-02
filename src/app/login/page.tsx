@@ -67,7 +67,7 @@ export default function LoginPage() {
   if (!isSupabaseConfigured) {
     return (
         <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8">
-            <Card className="w-full max-w-md bg-[#1C1C1C] text-white border-gray-700/50">
+            <Card className="w-full max-w-md bg-card text-card-foreground border-border">
                 <CardHeader>
                     <CardTitle className="text-2xl">Configuration Error</CardTitle>
                     <CardDescription>Supabase is not configured correctly.</CardDescription>
@@ -94,7 +94,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8">
-      <Card className="w-full max-w-sm bg-[#1C1C1C] text-white border-gray-700/50">
+      <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Admin Login</CardTitle>
           <CardDescription>Enter your admin credentials to manage events.</CardDescription>
@@ -117,7 +117,6 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-black/30 border-gray-600 focus:ring-white"
               />
             </div>
             <div className="space-y-2">
@@ -128,14 +127,13 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-black/30 border-gray-600 focus:ring-white"
               />
             </div>
             <div className="flex flex-col space-y-2 pt-2">
-                 <Button type="submit" className="w-full bg-white text-black hover:bg-gray-300" disabled={loading}>
+                 <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
-               <Button asChild variant="link" className="w-full text-gray-400 hover:text-white hover:no-underline">
+               <Button asChild variant="link" className="w-full text-muted-foreground hover:text-foreground hover:no-underline">
                    <Link href="/" className="hover:no-underline">Back to Calendar</Link>
                 </Button>
             </div>

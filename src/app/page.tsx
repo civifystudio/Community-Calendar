@@ -5,6 +5,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -33,17 +34,17 @@ import {
   Trash2,
   Edit,
   Share2,
-  Copy
+  Copy,
+  Link as LinkIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays, parseISO } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
-import { getEvents, addEvent, updateEvent, deleteEvent, signOut, CalendarEvent, isAdminUser } from './actions';
+import { getEvents, saveEvent, deleteEvent, signOut, CalendarEvent, isAdminUser } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LaidOutEvent extends CalendarEvent {
@@ -71,10 +72,10 @@ interface ViewProps {
   isMobile: boolean | undefined;
 }
 
-const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (event: CalendarEvent | Omit<CalendarEvent, "id" | "link">) => void, onCancel: () => void }) => {
+const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (formData: FormData) => void, onCancel: () => void }) => {
     const [title, setTitle] = useState(event?.title || '');
     const [details, setDetails] = useState(event?.details || '');
-    const [color, setColor] = useState<CalendarEvent['color']>(event?.color || 'blue');
+    const [externalLink, setExternalLink] = useState(event?.external_link || '');
     const [selectedDate, setSelectedDate] = useState<Date>(date);
 
     const decimalToTimeString = (decimalHour: number): string => {
@@ -93,24 +94,22 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
     const [startTime, setStartTime] = useState(decimalToTimeString(event?.start_hour || 9));
     const [endTime, setEndTime] = useState(decimalToTimeString(event?.end_hour || 10));
   
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      const eventData = {
-        ...event,
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        title,
-        details,
-        start_hour: timeStringToDecimal(startTime),
-        end_hour: timeStringToDecimal(endTime),
-        color,
-      };
-      
-      if ('id' in eventData && eventData.id) {
-        onSave(eventData as CalendarEvent);
-      } else {
-        const { id, link, ...newEventData } = eventData;
-        onSave(newEventData);
-      }
+      const formData = new FormData(e.currentTarget);
+      formData.set('date', format(selectedDate, 'yyyy-MM-dd'));
+      formData.set('start_hour', String(timeStringToDecimal(startTime)));
+      formData.set('end_hour', String(timeStringToDecimal(endTime)));
+       if (event?.id) {
+          formData.set('id', String(event.id));
+        }
+        if (event?.image_url && !formData.has('image_url')) {
+          const imageInput = e.currentTarget.elements.namedItem('image_url') as HTMLInputElement;
+          if (!imageInput || !imageInput.files || imageInput.files.length === 0) {
+            formData.set('existing_image_url', event.image_url);
+          }
+        }
+      onSave(formData);
     };
   
     return (
@@ -123,39 +122,34 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
           <div className="flex flex-col gap-6">
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required className="bg-black/30 border-gray-600" />
+              <Input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="details">Details</Label>
-              <Textarea id="details" value={details} onChange={(e) => setDetails(e.target.value)} required className="bg-black/30 border-gray-600" />
+              <Textarea id="details" name="details" value={details} onChange={(e) => setDetails(e.target.value)} required />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="external_link">External Link</Label>
+                <Input id="external_link" name="external_link" value={externalLink} onChange={(e) => setExternalLink(e.target.value)} placeholder="https://example.com/tickets" />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="image_url">Event Flyer</Label>
+                <Input id="image_url" name="image_url" type="file" accept="image/*" />
+                {event?.image_url && (
+                    <div className="text-sm text-muted-foreground">
+                        Current image: <a href={event.image_url} target="_blank" rel="noreferrer" className="underline">View</a>
+                    </div>
+                )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startTime">Start Time</Label>
-                <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required className="bg-black/30 border-gray-600" />
+                <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="endTime">End Time</Label>
-                <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required className="bg-black/30 border-gray-600" />
+                <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="color">Color</Label>
-              <Select value={color} onValueChange={(value: CalendarEvent['color']) => setColor(value)}>
-                <SelectTrigger id="color" className="bg-black/30 border-gray-600">
-                  <SelectValue placeholder="Select a color" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="blue">Blue</SelectItem>
-                  <SelectItem value="green">Green</SelectItem>
-                  <SelectItem value="purple">Purple</SelectItem>
-                  <SelectItem value="yellow">Yellow</SelectItem>
-                  <SelectItem value="red">Red</SelectItem>
-                  <SelectItem value="orange">Orange</SelectItem>
-                  <SelectItem value="pink">Pink</SelectItem>
-                  <SelectItem value="teal">Teal</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <div className="space-y-2">
@@ -164,7 +158,7 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate as (date?: Date) => void}
-              className="rounded-md border bg-black/30 border-gray-600 w-full"
+              className="rounded-md border w-full"
             />
           </div>
         </div>
@@ -172,7 +166,7 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
           <DialogClose asChild>
             <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
           </DialogClose>
-          <Button type="submit" className="bg-white text-black hover:bg-gray-300">Save Event</Button>
+          <Button type="submit">Save Event</Button>
         </DialogFooter>
       </form>
     );
@@ -199,15 +193,15 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
       transition={{ duration: 0.3 }}
       className="w-full max-w-4xl"
     >
-      <Card className="bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
+      <Card className="border-border rounded-xl overflow-hidden">
         <CardContent className="p-2 sm:p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-8">
           <div className="w-full md:w-1/3 flex flex-col">
             <div className='space-y-4 flex-grow'>
                <div className="flex justify-between items-center">
                     <h1 className="text-4xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
-                    {isAdmin && <Button size="sm" onClick={onAddEvent} className="bg-white text-black hover:bg-gray-300"><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
+                    {isAdmin && <Button size="sm" onClick={onAddEvent}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
                </div>
-               <Separator className="bg-gray-700/50" />
+               <Separator />
               
               <AnimatePresence mode="wait">
                 <motion.div
@@ -216,15 +210,15 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="space-y-4 text-gray-300 min-h-[100px]"
+                  className="space-y-4 text-muted-foreground min-h-[100px]"
                 >
                   {selectedDayEvents && selectedDayEvents.length > 0 ? (
                     <div className="space-y-3">
                       {selectedDayEvents.map((event, index) => (
                         <div key={index} className="flex justify-between items-start">
                           <div>
-                            <p className="text-xl font-semibold">{event.title}</p>
-                            <p className="text-lg text-gray-400">{event.details}</p>
+                            <p className="text-xl font-semibold text-foreground">{event.title}</p>
+                            <p className="text-lg">{event.details}</p>
                           </div>
                            {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditEvent(event)}><Edit className="h-4 w-4"/></Button>}
                         </div>
@@ -232,36 +226,36 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                     </div>
                   ) : (
                     <div>
-                      <p className="text-gray-400">{selectedDate ? 'No events scheduled for this day.' : 'Select a day to see events.'}</p>
+                      <p>{selectedDate ? 'No events scheduled for this day.' : 'Select a day to see events.'}</p>
                     </div>
                   )}
                 </motion.div>
               </AnimatePresence>
             </div>
-            <div className="text-left text-sm text-gray-500 mt-4">Arvin, CA</div>
+            <div className="text-left text-sm text-muted-foreground mt-4">Arvin, CA</div>
           </div>
 
           <div className="flex-1">
             <div className="flex items-center justify-between mb-4">
                <div className="flex items-center">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700" onClick={handlePrevMonth}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-accent" onClick={handlePrevMonth}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 <h2 className="font-semibold px-2">{format(displayDate, 'MMMM yyyy')}</h2>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:bg-gray-700" onClick={handleNextMonth}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-accent" onClick={handleNextMonth}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="flex items-center gap-1 p-1 bg-black/30 rounded-md">
-                <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'month' ? 'bg-gray-600' : ''}`}>
+              <div className="flex items-center gap-1 p-1 bg-secondary rounded-md">
+                <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`h-8 w-8 hover:bg-accent ${view === 'month' ? 'bg-background' : ''}`}>
                   <CalendarDays className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'week' ? 'bg-gray-600' : ''}`}>
+                <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`h-8 w-8 hover:bg-accent ${view === 'week' ? 'bg-background' : ''}`}>
                   <Columns3 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-            <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-xs text-gray-400 mb-2">
+            <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-xs text-muted-foreground mb-2">
               {daysOfWeek.map((day) => <div key={day}>{day}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-1 md:gap-2">
@@ -291,14 +285,13 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                     disabled={!day}
                     className={`
                       w-full h-full p-0 rounded-md relative
-                      ${isSelected ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}
-                      ${isToday && !isSelected ? 'bg-gray-800' : ''}
+                      ${isToday && !isSelected ? 'bg-secondary' : ''}
                       ${!day ? 'invisible' : ''}
                     `}
                   >
                     {day}
                     {day && events[day] && events[day].length > 0 && (
-                       <div className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 ${isSelected ? 'bg-black' : 'bg-white'} rounded-full`}></div>
+                       <div className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 ${isSelected ? 'bg-primary-foreground' : 'bg-foreground'} rounded-full`}></div>
                     )}
                   </Button>
                 </motion.div>
@@ -402,17 +395,6 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
   
   const selectedDayEvents = selectedDate ? allEvents.filter(event => isSameDay(parseISO(event.date), selectedDate)) : [];
 
-  const eventColorClasses = {
-    green: 'bg-green-500/20 border-green-500/50 hover:bg-green-500/30 transition-colors',
-    blue: 'bg-blue-500/20 border-blue-500/50 hover:bg-blue-500/30 transition-colors',
-    purple: 'bg-purple-500/20 border-purple-500/50 hover:bg-purple-500/30 transition-colors',
-    yellow: 'bg-yellow-500/20 border-yellow-500/50 hover:bg-yellow-500/30 transition-colors',
-    red: 'bg-red-500/20 border-red-500/50 hover:bg-red-500/30 transition-colors',
-    orange: 'bg-orange-500/20 border-orange-500/50 hover:bg-orange-500/30 transition-colors',
-    pink: 'bg-pink-500/20 border-pink-500/50 hover:bg-pink-500/30 transition-colors',
-    teal: 'bg-teal-500/20 border-teal-500/50 hover:bg-teal-500/30 transition-colors',
-  };
-
   const handlePrevWeek = () => setSelectedDate(subDays(selectedDate, 7));
   const handleNextWeek = () => setSelectedDate(addDays(selectedDate, 7));
   const handlePrevMonth = () => setDisplayDate(subMonths(displayDate, 1));
@@ -426,13 +408,13 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
       transition={{ duration: 0.3 }}
       className="w-full flex-1 flex"
     >
-      <div className="flex w-full bg-[#1C1C1C] overflow-hidden">
+      <div className="flex w-full bg-card overflow-hidden">
         {/* Left Panel */}
-        <div className="hidden p-4 md:flex flex-col md:w-[280px] lg:w-[320px] border-r border-gray-700/50 text-white">
+        <div className="hidden p-4 md:flex flex-col md:w-[280px] lg:w-[320px] border-r border-border">
           <div className='flex flex-col space-y-4 flex-grow'>
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Community Events</h1>
-                {isAdmin && <Button size="sm" onClick={onAddEvent} className="bg-white text-black hover:bg-gray-300"><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
+                {isAdmin && <Button size="sm" onClick={onAddEvent}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
             </div>
             <div>
                 <AnimatePresence mode="wait">
@@ -442,38 +424,38 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="space-y-2 text-sm text-gray-300 min-h-[60px]"
+                    className="space-y-2 text-sm text-muted-foreground min-h-[60px]"
                   >
                     {selectedDayEvents && selectedDayEvents.length > 0 ? (
                       <div className="space-y-3">
                         {selectedDayEvents.map((event, index) => (
                           <div key={index} className="flex justify-between items-start">
                             <div>
-                              <p className="font-semibold">{event.title}</p>
-                              <p className="text-gray-400 text-xs">{event.details}</p>
+                              <p className="font-semibold text-foreground">{event.title}</p>
+                              <p className="text-xs">{event.details}</p>
                             </div>
                              {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditEvent(event)}><Edit className="h-4 w-4"/></Button>}
                           </div>
                         ))}
                       </div>
                     ) : (
-                       <p className="text-gray-400">No events for this day.</p>
+                       <p>No events for this day.</p>
                     )}
                   </motion.div>
                 </AnimatePresence>
             </div>
           </div>
-          <div className="text-left text-sm text-gray-500 mt-4">Arvin, CA</div>
+          <div className="text-left text-sm text-muted-foreground mt-4">Arvin, CA</div>
 
           <div className="mt-8">
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-semibold text-sm">{format(displayDate, 'MMMM yyyy')}</h2>
               <div className="flex">
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handlePrevMonth}><ChevronLeft className="w-3 h-3" /></Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handleNextMonth}><ChevronRight className="w-3 h-3" /></Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:bg-accent" onClick={handlePrevMonth}><ChevronLeft className="w-3 h-3" /></Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:bg-accent" onClick={handleNextMonth}><ChevronRight className="w-3 h-3" /></Button>
               </div>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2">
+            <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground mb-2">
               {miniCalendarDaysOfWeek.map((day, index) => <div key={`${day}-${index}`}>{day}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-1">
@@ -488,11 +470,11 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                     whileTap={{ scale: 0.95 }}
                 >
                     <Button variant={isSelected ? 'default' : 'ghost'} onClick={() => dayDate && setSelectedDate(dayDate)} disabled={!day}
-                      className={`h-8 w-8 p-0 rounded-md relative text-xs w-full ${!day ? 'invisible' : ''} ${isSelected ? 'bg-white text-black hover:bg-gray-200' : 'text-gray-300 hover:bg-gray-700/50'}`}>
+                      className={`h-8 w-8 p-0 rounded-md relative text-xs w-full ${!day ? 'invisible' : ''}`}>
                       {day}
                     </Button>
                     {day && events[day] && events[day].length > 0 && (
-                      <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 ${isSelected ? 'bg-black' : 'bg-white'} rounded-full`}></div>
+                      <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 ${isSelected ? 'bg-primary-foreground' : 'bg-foreground'} rounded-full`}></div>
                     )}
                  </motion.div>
               )})}
@@ -502,17 +484,17 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
 
         {/* Right Panel */}
         <div className="flex-1 flex flex-col min-h-0">
-          <header className="p-2 md:p-4 flex justify-between items-center flex-wrap gap-y-2 border-b border-gray-700/50 shrink-0">
+          <header className="p-2 md:p-4 flex justify-between items-center flex-wrap gap-y-2 border-b border-border shrink-0">
             <div className="flex items-center gap-2">
               <h2 className="font-semibold">{selectedDate && format(weekDays[0], 'MMM d')} - {selectedDate && format(weekDays[6], 'MMM d, yyyy')}</h2>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handlePrevWeek}><ChevronLeft className="w-4 h-4" /></Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handleNextWeek}><ChevronRight className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:bg-accent" onClick={handlePrevWeek}><ChevronLeft className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:bg-accent" onClick={handleNextWeek}><ChevronRight className="w-4 h-4" /></Button>
             </div>
-            <div className="flex items-center gap-1 p-1 bg-black/30 rounded-md">
-              <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'month' ? 'bg-gray-600' : ''}`}>
+            <div className="flex items-center gap-1 p-1 bg-secondary rounded-md">
+              <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`h-8 w-8 hover:bg-accent ${view === 'month' ? 'bg-background' : ''}`}>
                 <CalendarDays className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`text-white h-8 w-8 hover:bg-gray-700 ${view === 'week' ? 'bg-gray-600' : ''}`}>
+              <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`h-8 w-8 hover:bg-accent ${view === 'week' ? 'bg-background' : ''}`}>
                 <Columns3 className="h-4 w-4" />
               </Button>
             </div>
@@ -523,14 +505,14 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                 <div className="flex">
                   <div className="w-16 shrink-0 hidden md:block"></div>
                   {weekDays.map(day => (
-                    <div key={day.toString()} className="flex-1 text-center text-xs text-gray-400 font-semibold py-2">
-                      {isSameDay(day, new Date()) ? <span className="bg-white text-black rounded-full px-2 py-1 font-bold">{format(day, 'EEE dd')}</span> : format(day, 'EEE dd')}
+                    <div key={day.toString()} className="flex-1 text-center text-xs text-muted-foreground font-semibold py-2">
+                      {isSameDay(day, new Date()) ? <span className="bg-primary text-primary-foreground rounded-full px-2 py-1 font-bold">{format(day, 'EEE dd')}</span> : format(day, 'EEE dd')}
                     </div>
                   ))}
                 </div>
 
                 <div className="flex-1 flex overflow-hidden">
-                  <div className="w-16 text-xs text-gray-500 text-right pr-2 flex-col hidden md:flex">
+                  <div className="w-16 text-xs text-muted-foreground text-right pr-2 flex-col hidden md:flex">
                     {timeSlots.map(time => <div key={time} className="flex-1 -mt-2 pt-2">{time}</div>)}
                   </div>
                   <div className="flex-1 grid grid-cols-7">
@@ -538,8 +520,8 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                        const dayEvents = allEvents.filter(event => isSameDay(parseISO(event.date), day));
                        const laidOutEvents = getEventLayouts(dayEvents);
                        return (
-                          <div key={day.toString()} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
-                            {timeSlots.map((_, index) => <div key={index} className="flex-1 border-b border-gray-700/50"></div>)}
+                          <div key={day.toString()} className="flex-1 border-l border-border relative flex flex-col">
+                            {timeSlots.map((_, index) => <div key={index} className="flex-1 border-b border-border"></div>)}
                             <AnimatePresence>
                             {laidOutEvents
                               .filter(event => event.end_hour > gridStartHour && event.start_hour < gridEndHour)
@@ -574,7 +556,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                                         }
                                    }}
                                   >
-                                   <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col border ${eventColorClasses[event.color as keyof typeof eventColorClasses]}`}>
+                                   <div className="h-full p-2 rounded-lg text-foreground text-xs flex flex-col border bg-secondary hover:bg-accent transition-colors">
                                      <span className="font-bold truncate">{event.title}</span>
                                      <span className='truncate'>{event.details}</span>
                                    </div>
@@ -691,15 +673,10 @@ export default function CalendarPage() {
       }
   };
   
-  const handleSaveEvent = async (eventData: CalendarEvent | Omit<CalendarEvent, 'id' | 'link'>) => {
+  const handleSaveEvent = async (formData: FormData) => {
       try {
-        if ('id' in eventData) {
-            await updateEvent(eventData as CalendarEvent);
-            toast({ title: "Event updated successfully!" });
-        } else {
-            await addEvent(eventData);
-            toast({ title: "Event added successfully!" });
-        }
+        await saveEvent(formData);
+        toast({ title: "Event saved successfully!" });
         await fetchAndSetEvents();
         setIsFormOpen(false);
         setEditingEvent(null);
@@ -744,8 +721,8 @@ export default function CalendarPage() {
 
   if (!displayDate || !selectedDate || isMobile === undefined) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 w-full">
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 w-full">
+      </div>
     );
   }
 
@@ -764,33 +741,43 @@ export default function CalendarPage() {
   const EventDetailsContent = ({ events, onClose }: { events: CalendarEvent[], onClose: () => void }) => (
     <>
       <SheetHeader>
-        <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-gray-600 mb-4" />
+        <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4" />
         <SheetTitle>Events for {format(parseISO(events[0].date), 'MMMM d')}</SheetTitle>
-        <SheetDescription className="text-gray-400">
-          All scheduled events are listed below.
-        </SheetDescription>
       </SheetHeader>
       <div className="py-4 space-y-4 overflow-y-auto pr-4 -mr-4">
         {events.map((event, index) => (
-          <div key={index} className="space-y-1 border-b border-gray-700/50 pb-4 last:border-b-0 last:pb-0">
+          <div key={index} className="space-y-3 border-b border-border pb-4 last:border-b-0 last:pb-0">
+             {event.image_url && (
+              <div className="relative w-full h-48 rounded-md overflow-hidden">
+                <Image src={event.image_url} alt={event.title} layout="fill" objectFit="cover" />
+              </div>
+            )}
             <h3 className="font-semibold text-lg">{event.title}</h3>
             <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
-            <p className="text-sm text-gray-400 mt-1">{event.details}</p>
-            <div className="flex gap-2 pt-2">
+            <p className="text-sm text-muted-foreground mt-1">{event.details}</p>
+            <div className="flex flex-wrap gap-2 pt-2">
                 {isAdmin && <Button size="sm" variant="outline" onClick={() => { onClose(); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
                 {event.link && (
-                    <>
-                        <Button asChild size="sm" variant="outline">
-                            <Link href={event.link}>
-                                <Share2 className="mr-2 h-4 w-4"/>
-                                View Page
-                            </Link>
-                        </Button>
-                        <Button size="sm" variant="secondary" onClick={() => copyLink(event.link!)}>
-                            <Copy className="mr-2 h-4 w-4"/>
-                            Copy Link
-                        </Button>
-                    </>
+                  <Button asChild size="sm" variant="outline">
+                      <Link href={event.link}>
+                          <Share2 className="mr-2 h-4 w-4"/>
+                          View Page
+                      </Link>
+                  </Button>
+                )}
+                {event.external_link && (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={event.external_link} target="_blank" rel="noopener noreferrer">
+                      <LinkIcon className="mr-2 h-4 w-4" />
+                      Event Link
+                    </a>
+                  </Button>
+                )}
+                {event.link && (
+                  <Button size="sm" variant="secondary" onClick={() => copyLink(event.link!)}>
+                      <Copy className="mr-2 h-4 w-4"/>
+                      Copy Link
+                  </Button>
                 )}
             </div>
           </div>
@@ -800,7 +787,7 @@ export default function CalendarPage() {
   );
 
   return (
-    <div className={"flex flex-col w-full " + (view === 'month' ? "min-h-screen items-center justify-center p-2 sm:p-4 md:p-6" : "h-screen")}>
+    <div className={`flex flex-col w-full ${view === 'month' ? "min-h-screen items-center justify-center p-2 sm:p-4 md:p-6" : "h-screen"}`}>
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
@@ -809,7 +796,7 @@ export default function CalendarPage() {
           )}
       </AnimatePresence>
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50 sm:max-w-3xl">
+        <DialogContent className="sm:max-w-3xl">
             {editingEvent && selectedDate && (
                 <EventForm event={editingEvent} date={selectedDate} onSave={handleSaveEvent} onCancel={() => setIsFormOpen(false)} />
             )}
@@ -825,7 +812,7 @@ export default function CalendarPage() {
       
       {!isMobile && (
         <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
-            <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50">
+            <DialogContent>
                 {dialogEvent && dialogEvent.length > 0 && (
                     <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
                 )}
@@ -835,7 +822,7 @@ export default function CalendarPage() {
 
       {isMobile && (
         <Sheet open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
-            <SheetContent side="bottom" className="bg-[#1C1C1C] text-white border-gray-700/50 rounded-t-xl">
+            <SheetContent side="bottom" className="rounded-t-xl max-h-[80vh]">
                 {dialogEvent && dialogEvent.length > 0 && (
                      <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
                 )}
@@ -845,9 +832,9 @@ export default function CalendarPage() {
 
       <div className="mt-8 text-center">
         {isAdmin ? (
-          <Button variant="link" size="sm" onClick={handleSignOut} className="text-gray-400 hover:text-white hover:no-underline">Admin Logout</Button>
+          <Button variant="link" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground hover:no-underline">Admin Logout</Button>
         ) : (
-          <Button asChild variant="link" size="sm" className="text-gray-400 hover:text-white hover:no-underline">
+          <Button asChild variant="link" size="sm" className="text-muted-foreground hover:text-foreground hover:no-underline">
             <Link href="/login" className="hover:no-underline">Admin Login</Link>
           </Button>
         )}
