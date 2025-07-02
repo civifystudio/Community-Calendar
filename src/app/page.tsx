@@ -196,108 +196,116 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
       className="w-full max-w-4xl"
     >
       <Card className="border-border rounded-xl overflow-hidden">
-        <CardContent className="p-2 sm:p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-8">
-          <div className="w-full md:w-1/3 flex flex-col">
-            <div className='space-y-4 flex-grow'>
-               <div className="flex justify-between items-center">
-                    <h1 className="text-4xl sm:text-5xl font-bold whitespace-nowrap">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
-                    {isAdmin && <Button size="sm" onClick={onAddEvent}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
-               </div>
-               <Separator />
-              
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={selectedDate?.toString()}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-4 text-muted-foreground min-h-[100px]"
-                >
-                  {selectedDayEvents && selectedDayEvents.length > 0 ? (
-                    <div className="space-y-3">
-                      {selectedDayEvents.map((event, index) => (
-                        <div key={index} className="flex justify-between items-start">
-                          <div>
-                            <p className="text-2xl font-semibold text-foreground">{event.title}</p>
-                            <FormattedText text={event.details} className="text-xl" />
-                          </div>
-                           {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditEvent(event)}><Edit className="h-4 w-4"/></Button>}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div>
-                      <p>{selectedDate ? 'No events scheduled for this day.' : 'Select a day to see events.'}</p>
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-            <div className="text-left text-sm text-muted-foreground mt-4">Arvin, CA</div>
-          </div>
-
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-4">
-               <div className="flex items-center">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-accent" onClick={handlePrevMonth}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <h2 className="font-semibold px-2">{format(displayDate, 'MMMM yyyy')}</h2>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-accent" onClick={handleNextMonth}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+        <CardContent className="p-2 sm:p-4 md:p-6 flex flex-col gap-4">
+          {/* HEADER */}
+          <div className="flex justify-between items-center flex-wrap gap-y-2">
+              <div className="flex items-baseline gap-x-4">
+                  <h1 className="text-4xl sm:text-5xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
+                  <div className="flex items-center">
+                      <h2 className="font-semibold text-xl text-muted-foreground">{format(displayDate, 'MMMM yyyy')}</h2>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-accent" onClick={handlePrevMonth}>
+                          <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-accent" onClick={handleNextMonth}>
+                          <ChevronRight className="w-4 h-4" />
+                      </Button>
+                  </div>
               </div>
               <div className="flex items-center gap-1 p-1 bg-secondary rounded-md">
-                <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`h-8 w-8 hover:bg-accent ${view === 'month' ? 'bg-background' : ''}`}>
-                  <CalendarDays className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`h-8 w-8 hover:bg-accent ${view === 'week' ? 'bg-background' : ''}`}>
-                  <Columns3 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-xs text-muted-foreground mb-2">
-              {daysOfWeek.map((day) => <div key={day}>{day}</div>)}
-            </div>
-            <div className="grid grid-cols-7 gap-1 md:gap-2">
-              {calendarDays.map((day, index) => {
-                const dayDate = day ? new Date(displayDate.getFullYear(), displayDate.getMonth(), day) : null;
-                const isSelected = dayDate && selectedDate && isSameDay(selectedDate, dayDate);
-                const isToday = dayDate && isSameDay(new Date(), dayDate);
-
-                return (
-                <motion.div
-                  key={index}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="relative aspect-square"
-                >
-                  <Button
-                    variant={isSelected ? 'default' : isToday ? 'secondary' : 'ghost'}
-                    onClick={() => {
-                        if (dayDate) {
-                            setSelectedDate(dayDate);
-                            const dayEvents = allEvents.filter(event => isSameDay(parseISO(event.date), dayDate));
-                            if (isMobile && dayEvents.length > 0) {
-                                setDialogEvent(dayEvents);
-                            }
-                        }
-                    }}
-                    disabled={!day}
-                    className={`
-                      w-full h-full p-0 rounded-md relative
-                      ${isToday && !isSelected ? 'bg-secondary' : ''}
-                      ${!day ? 'invisible' : ''}
-                    `}
-                  >
-                    {day}
-                    {day && events[day] && events[day].length > 0 && (
-                       <div className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 ${isSelected ? 'bg-primary-foreground' : 'bg-foreground'} rounded-full`}></div>
-                    )}
+                  <Button variant="ghost" size="icon" onClick={() => setView('month')} className={`h-8 w-8 hover:bg-accent ${view === 'month' ? 'bg-background' : ''}`}>
+                      <CalendarDays className="h-4 w-4" />
                   </Button>
-                </motion.div>
-              )})}
+                  <Button variant="ghost" size="icon" onClick={() => setView('week')} className={`h-8 w-8 hover:bg-accent ${view === 'week' ? 'bg-background' : ''}`}>
+                      <Columns3 className="h-4 w-4" />
+                  </Button>
+              </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+            {/* Left Panel */}
+            <div className="w-full md:w-1/3 flex flex-col">
+              <div className='space-y-4 flex-grow'>
+                 <div className="flex justify-end items-center h-9">
+                      {isAdmin && <Button size="sm" onClick={onAddEvent}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
+                 </div>
+                 <Separator />
+                
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedDate?.toString()}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-4 text-muted-foreground min-h-[100px]"
+                  >
+                    {selectedDayEvents && selectedDayEvents.length > 0 ? (
+                      <div className="space-y-3">
+                        {selectedDayEvents.map((event, index) => (
+                          <div key={index} className="flex justify-between items-start">
+                            <div>
+                              <p className="text-2xl font-semibold text-foreground">{event.title}</p>
+                              <FormattedText text={event.details} className="text-xl" />
+                            </div>
+                             {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditEvent(event)}><Edit className="h-4 w-4"/></Button>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div>
+                        <p>{selectedDate ? 'No events scheduled for this day.' : 'Select a day to see events.'}</p>
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+              <div className="text-left text-sm text-muted-foreground mt-4">Arvin, CA</div>
+            </div>
+
+            {/* Right Panel */}
+            <div className="flex-1">
+              <div className="grid grid-cols-7 gap-1 md:gap-2 text-center text-xs text-muted-foreground mb-2">
+                {daysOfWeek.map((day) => <div key={day}>{day}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1 md:gap-2">
+                {calendarDays.map((day, index) => {
+                  const dayDate = day ? new Date(displayDate.getFullYear(), displayDate.getMonth(), day) : null;
+                  const isSelected = dayDate && selectedDate && isSameDay(selectedDate, dayDate);
+                  const isToday = dayDate && isSameDay(new Date(), dayDate);
+
+                  return (
+                  <motion.div
+                    key={index}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative aspect-square"
+                  >
+                    <Button
+                      variant={isSelected ? 'default' : isToday ? 'secondary' : 'ghost'}
+                      onClick={() => {
+                          if (dayDate) {
+                              setSelectedDate(dayDate);
+                              const dayEvents = allEvents.filter(event => isSameDay(parseISO(event.date), dayDate));
+                              if (isMobile && dayEvents.length > 0) {
+                                  setDialogEvent(dayEvents);
+                              }
+                          }
+                      }}
+                      disabled={!day}
+                      className={`
+                        w-full h-full p-0 rounded-md relative
+                        ${isToday && !isSelected ? 'bg-secondary' : ''}
+                        ${!day ? 'invisible' : ''}
+                      `}
+                    >
+                      {day}
+                      {day && events[day] && events[day].length > 0 && (
+                         <div className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 ${isSelected ? 'bg-primary-foreground' : 'bg-foreground'} rounded-full`}></div>
+                      )}
+                    </Button>
+                  </motion.div>
+                )})}
+              </div>
             </div>
           </div>
         </CardContent>
