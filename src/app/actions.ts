@@ -10,7 +10,6 @@ export interface CalendarEvent {
   details: string;
   start_hour: number;
   end_hour: number;
-  image_url?: string | null;
   external_link?: string | null;
   link?: string;
 }
@@ -81,32 +80,8 @@ export async function saveEvent(formData: FormData): Promise<CalendarEvent | nul
         start_hour: Number(formData.get('start_hour')),
         end_hour: Number(formData.get('end_hour')),
         external_link: formData.get('external_link') as string,
-        image_url: formData.get('existing_image_url') as string || null,
     };
     
-    const imageFile = formData.get('image_url') as File;
-    
-    if (imageFile && imageFile.size > 0) {
-        const filePath = `${Date.now()}_${imageFile.name}`;
-        const { error: uploadError } = await supabase.storage
-            .from('events')
-            .upload(filePath, imageFile, {
-                cacheControl: '3600',
-                upsert: false
-            });
-        
-        if (uploadError) {
-            console.error('Error uploading image:', uploadError);
-            throw new Error(`Failed to upload image: ${uploadError.message}`);
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-            .from('events')
-            .getPublicUrl(filePath);
-        
-        eventData.image_url = publicUrl;
-    }
-
     if (eventId) {
         // Update
         const { data, error } = await supabase

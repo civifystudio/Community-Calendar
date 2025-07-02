@@ -86,14 +86,11 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
         title: '',
         details: '',
         external_link: '',
-        image_url: null,
         ...event,
         date: event?.date ? format(parseISO(event.date), 'yyyy-MM-dd') : format(date, 'yyyy-MM-dd'),
         start_hour: event?.start_hour || 9,
         end_hour: event?.end_hour || 10,
     });
-    
-    const [imageFile, setImageFile] = useState<File | null>(null);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -110,14 +107,6 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
         setCurrentEventData(prev => ({ ...prev, [name]: timeAsDecimal(value) }));
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setImageFile(file);
-            setCurrentEventData(prev => ({ ...prev, image_url: URL.createObjectURL(file) }));
-        }
-    };
-    
     const handleSubmit = async () => {
         setIsSaving(true);
         const formData = new FormData();
@@ -126,12 +115,6 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
                 formData.append(key, String(value));
             }
         });
-
-        if (imageFile) {
-            formData.set('image_url', imageFile);
-        } else if (event?.image_url) {
-            formData.set('existing_image_url', event.image_url);
-        }
 
         if (event?.id) {
           formData.set('id', String(event.id));
@@ -216,15 +199,6 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
                     <div className="space-y-2">
                     <Label htmlFor="external_link">External Link</Label>
                     <Input id="external_link" name="external_link" value={currentEventData.external_link || ''} onChange={handleInputChange} placeholder="https://example.com/tickets" />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="image_url">Event Flyer</Label>
-                    <Input id="image_url" name="image_url" type="file" accept="image/*" onChange={handleImageChange} />
-                    {currentEventData.image_url && (
-                        <div className="mt-2">
-                            <Image src={currentEventData.image_url} alt="Flyer preview" width={100} height={100} className="rounded-md object-cover" />
-                        </div>
-                    )}
                 </div>
                     <div className="space-y-2">
                     <Label>Date</Label>
@@ -682,11 +656,6 @@ const EventDetailsContent = ({ events, onEdit, onCopyLink }: { events: CalendarE
         <div className="space-y-4">
             {events.map((event, index) => (
                 <div key={index} className="space-y-3 border-b border-border pb-4 last:border-b-0 last:pb-0">
-                {event.image_url && (
-                    <div className="relative w-full h-48 rounded-md overflow-hidden">
-                    <Image src={event.image_url} alt={event.title} layout="fill" objectFit="cover" data-ai-hint="event flyer" />
-                    </div>
-                )}
                 <h3 className="font-semibold text-lg">{event.title}</h3>
                 <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
                 <FormattedText text={event.details} className="text-sm text-muted-foreground mt-1" />
