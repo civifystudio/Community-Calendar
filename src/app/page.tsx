@@ -316,7 +316,7 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
           {/* HEADER */}
           <div className="flex justify-between items-center flex-wrap gap-y-2">
               <div className="flex items-baseline gap-x-2">
-                <h1 className="text-4xl sm:text-5xl font-bold whitespace-nowrap">{selectedDate ? format(selectedDate, 'EEEE') : 'Select a day'}</h1>
+                <h1 className="text-4xl sm:text-5xl font-bold">{selectedDate ? format(selectedDate, 'EEEE') : 'Select a day'}</h1>
                 <h2 className="text-2xl sm:text-3xl font-semibold text-muted-foreground">{selectedDate ? format(selectedDate, 'd') : ''}</h2>
               </div>
               <div className="flex items-center gap-x-4">
@@ -963,15 +963,17 @@ export default function CalendarPage() {
         </Sheet>
       )}
 
-      <div className="mt-8 text-center">
-        {isAdmin ? (
-          <Button variant="link" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground hover:no-underline">Admin Logout</Button>
-        ) : (
-          <Button asChild variant="link" size="sm" className="text-muted-foreground hover:text-foreground hover:no-underline">
-            <Link href="/login" className="hover:no-underline">Admin Login</Link>
-          </Button>
-        )}
-      </div>
+      {view === 'month' && (
+        <div className="mt-8 text-center">
+          {isAdmin ? (
+            <Button variant="link" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-foreground hover:no-underline">Admin Logout</Button>
+          ) : (
+            <Button asChild variant="link" size="sm" className="text-muted-foreground hover:text-foreground hover:no-underline">
+              <Link href="/login" className="hover:no-underline">Admin Login</Link>
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
