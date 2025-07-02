@@ -13,9 +13,6 @@ export interface CalendarEvent {
   image_url?: string | null;
   external_link?: string | null;
   link?: string;
-  location_name?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
 }
 
 export async function getEvents() {
@@ -85,9 +82,6 @@ export async function saveEvent(formData: FormData): Promise<CalendarEvent | nul
         end_hour: Number(formData.get('end_hour')),
         external_link: formData.get('external_link') as string,
         image_url: formData.get('existing_image_url') as string || null,
-        location_name: formData.get('location_name') as string || null,
-        latitude: formData.get('latitude') ? Number(formData.get('latitude')) : null,
-        longitude: formData.get('longitude') ? Number(formData.get('longitude')) : null,
     };
     
     const imageFile = formData.get('image_url') as File;
@@ -179,20 +173,4 @@ export async function signOut() {
     await supabase.auth.signOut();
     revalidatePath('/');
     revalidatePath('/login');
-}
-
-export async function findEventsNear(latitude: number, longitude: number, radiusInMeters: number = 5000) {
-    const supabase = createClient();
-    const { data, error } = await supabase
-        .rpc('find_events_near', {
-            lat: latitude,
-            lng: longitude,
-            radius_meters: radiusInMeters
-        });
-
-    if (error) {
-        console.error('Error finding nearby events:', error);
-        throw new Error('Failed to find nearby events.');
-    }
-    return data;
 }

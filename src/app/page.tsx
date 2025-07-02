@@ -16,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import {
   Sheet,
@@ -36,14 +35,12 @@ import {
   Copy,
   Clock,
   Link as LinkIcon,
-  MapPin,
   PartyPopper,
-  Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays, parseISO } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
-import { getEvents, saveEvent, deleteEvent, signOut, CalendarEvent, isAdminUser, findEventsNear } from './actions';
+import { getEvents, saveEvent, deleteEvent, signOut, CalendarEvent, isAdminUser } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,19 +48,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FormattedText } from '@/components/formatted-text';
 import { cn } from '@/lib/utils';
-import dynamic from 'next/dynamic';
 import ReactConfetti from 'react-confetti';
-
-const EventMap = dynamic(() => import('@/components/event-map').then(mod => mod.default), {
-  ssr: false,
-  loading: () => <div className="w-full h-[250px] bg-muted rounded-md animate-pulse" />
-});
-
-const EventFormMap = dynamic(() => import('@/components/event-form-map').then(mod => mod.default), {
-  ssr: false,
-  loading: () => <div className="w-full h-[200px] bg-muted rounded-md animate-pulse" />
-});
-
 
 interface LaidOutEvent extends CalendarEvent {
   left: number;
@@ -88,8 +73,6 @@ interface ViewProps {
   onAddEvent: () => void;
   onEditEvent: (event: CalendarEvent) => void;
   isMobile: boolean | undefined;
-  onFindNearby: () => void;
-  isFindingNearby: boolean;
 }
 
 const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (formData: FormData) => Promise<CalendarEvent | null>, onCancel: () => void, isAdmin: boolean, onDelete: (id: number) => void }) => {
@@ -101,9 +84,6 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
         title: '',
         details: '',
         external_link: '',
-        location_name: '',
-        latitude: undefined,
-        longitude: undefined,
         image_url: null,
         ...event,
         date: event?.date ? format(parseISO(event.date), 'yyyy-MM-dd') : format(date, 'yyyy-MM-dd'),
@@ -159,7 +139,7 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
         setIsSaving(false);
         if (result) {
             setNewlyCreatedEvent(result);
-            setStep(3); // Move to success step
+            setStep(2); // Move to success step
         }
     };
 
@@ -187,8 +167,8 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
                 return (
                     <div className="space-y-6">
                         <DialogHeader>
-                            <DialogTitle>{event?.id ? 'Step 1: Edit Event Details' : 'Step 1: Add Event Details'}</DialogTitle>
-                            <DialogDescription>Fill in the main details for your event.</DialogDescription>
+                            <DialogTitle>{event?.id ? 'Edit Event Details' : 'Add Event Details'}</DialogTitle>
+                            <DialogDescription>Fill in the details for your event.</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                             <div className="space-y-2">
@@ -234,49 +214,13 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-                            <Button type="button" onClick={() => setStep(2)}>Next</Button>
+                            <Button type="button" onClick={handleSubmit} disabled={isSaving}>
+                                {isSaving ? 'Saving...' : 'Save Event'}
+                            </Button>
                         </DialogFooter>
                     </div>
                 );
             case 2:
-                return (
-                    <div className="space-y-6">
-                        <DialogHeader>
-                            <DialogTitle>Step 2: Add Location</DialogTitle>
-                            <DialogDescription>Add a location and click the map to set coordinates.</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="location_name">Location Name</Label>
-                                <Input id="location_name" name="location_name" value={currentEventData.location_name || ''} onChange={handleInputChange} placeholder="e.g., Central Park" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="latitude">Latitude</Label>
-                                    <Input id="latitude" name="latitude" type="number" step="any" value={currentEventData.latitude || ''} onChange={handleInputChange} placeholder="e.g., 40.785091" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="longitude">Longitude</Label>
-                                    <Input id="longitude" name="longitude" type="number" step="any" value={currentEventData.longitude || ''} onChange={handleInputChange} placeholder="e.g., -73.968285" />
-                                </div>
-                            </div>
-                            <EventFormMap 
-                                key={JSON.stringify(currentEventData.latitude) + JSON.stringify(currentEventData.longitude)}
-                                position={currentEventData.latitude && currentEventData.longitude ? [currentEventData.latitude, currentEventData.longitude] : [35.207, -118.828]} 
-                                onLocationSelect={({lat, lng}) => {
-                                    setCurrentEventData(prev => ({...prev, latitude: lat, longitude: lng}))
-                                }} 
-                            />
-                        </div>
-                        <DialogFooter className="flex justify-between w-full">
-                           <Button type="button" variant="secondary" onClick={() => setStep(1)}>Back</Button>
-                           <Button type="button" onClick={handleSubmit} disabled={isSaving}>
-                               {isSaving ? 'Saving...' : 'Save Event'}
-                           </Button>
-                        </DialogFooter>
-                    </div>
-                );
-            case 3:
                 return (
                     <div className="flex flex-col items-center justify-center text-center space-y-6 h-full">
                         <ReactConfetti recycle={false} numberOfPieces={200} />
@@ -318,7 +262,7 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
                     {renderStep()}
                 </motion.div>
             </AnimatePresence>
-            {isAdmin && event?.id && step !== 3 && (
+            {isAdmin && event?.id && step !== 2 && (
                  <div className="mt-auto pt-6 border-t">
                     <Button type="button" variant="destructive" onClick={() => onDelete(event.id!)}>
                         <Trash2 className="mr-2 h-4 w-4" /> Delete This Event
@@ -330,7 +274,7 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
 };
 
 
-const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent, isMobile, onFindNearby, isFindingNearby }: ViewProps) => {
+const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent, isMobile }: ViewProps) => {
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   
   const firstDayOfMonth = getDay(new Date(displayDate.getFullYear(), displayDate.getMonth(), 1));
@@ -384,10 +328,6 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
             <div className="w-full md:w-1/3 flex flex-col">
               <div className='space-y-4 flex-grow'>
                  <div className="flex justify-end items-center h-9 gap-2">
-                    <Button size="sm" variant="outline" onClick={onFindNearby} disabled={isFindingNearby}>
-                        {isFindingNearby ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MapPin className="mr-2 h-4 w-4"/>}
-                        Nearby
-                    </Button>
                     {isAdmin && <Button size="sm" onClick={onAddEvent}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
                  </div>
                  <Separator />
@@ -767,11 +707,6 @@ export default function CalendarPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Partial<CalendarEvent> | null>(null);
 
-  const [isNearbySheetOpen, setIsNearbySheetOpen] = useState(false);
-  const [nearbyEvents, setNearbyEvents] = useState<CalendarEvent[] | null>(null);
-  const [isFindingNearby, setIsFindingNearby] = useState(false);
-
-
   const fetchAndSetEvents = useCallback(async () => {
     const eventsFromDb = await getEvents();
     setAllEvents(eventsFromDb);
@@ -883,50 +818,6 @@ export default function CalendarPage() {
       setEditingEvent(null);
   }
 
-  const handleFindNearby = async () => {
-      setIsFindingNearby(true);
-      setNearbyEvents(null);
-
-      if (!navigator.geolocation) {
-          toast({
-              variant: 'destructive',
-              title: 'Geolocation Not Supported',
-              description: 'Your browser does not support geolocation.',
-          });
-          setIsFindingNearby(false);
-          return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-          async (position) => {
-              try {
-                  const { latitude, longitude } = position.coords;
-                  const events = await findEventsNear(latitude, longitude);
-                  setNearbyEvents(events || []);
-                  setIsNearbySheetOpen(true);
-              } catch (error) {
-                  toast({
-                      variant: 'destructive',
-                      title: 'Error Finding Events',
-                      description: 'Could not fetch nearby events.',
-                  });
-              } finally {
-                  setIsFindingNearby(false);
-              }
-          },
-          (error) => {
-              toast({
-                  variant: 'destructive',
-                  title: 'Geolocation Error',
-                  description: error.code === error.PERMISSION_DENIED
-                      ? "You denied the request for Geolocation."
-                      : "Could not get your location. Please ensure location services are enabled.",
-              });
-              setIsFindingNearby(false);
-          }
-      );
-  };
-
   const formatTime = (hour: number) => {
     const h = Math.floor(hour);
     const m = Math.round((hour - h) * 60);
@@ -962,7 +853,7 @@ export default function CalendarPage() {
       return acc;
   }, {} as EventsByDate);
 
-  const viewProps = { allEvents, events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick, isMobile, onFindNearby: handleFindNearby, isFindingNearby };
+  const viewProps = { allEvents, events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick, isMobile };
 
   const EventDetailsContent = ({ events, onClose }: { events: CalendarEvent[], onClose: () => void }) => (
     <>
@@ -981,17 +872,6 @@ export default function CalendarPage() {
             <h3 className="font-semibold text-lg">{event.title}</h3>
             <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
             <FormattedText text={event.details} className="text-sm text-muted-foreground mt-1" />
-            {event.location_name && event.latitude && event.longitude && (
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-semibold">{event.location_name}</p>
-                </div>
-                <div className="rounded-md overflow-hidden border">
-                    <EventMap position={[event.latitude, event.longitude]} locationName={event.location_name} />
-                </div>
-              </div>
-            )}
             <div className="flex flex-wrap gap-2 pt-2">
                 {isAdmin && <Button size="sm" variant="outline" onClick={() => { onClose(); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
                 {event.link && (
@@ -1019,40 +899,6 @@ export default function CalendarPage() {
             </div>
           </div>
         ))}
-      </div>
-    </>
-  );
-
-  const NearbyEventsContent = ({ events, onClose }: { events: CalendarEvent[] | null, onClose: () => void }) => (
-    <>
-      <SheetHeader>
-        {isMobile && <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4" />}
-        <SheetTitle>Nearby Events</SheetTitle>
-      </SheetHeader>
-      <div className="py-4 space-y-4 overflow-y-auto pr-4 -mr-4">
-        {events && events.length > 0 ? (
-          events.map((event) => (
-            <Card key={event.id}>
-              <CardContent className="p-4 space-y-2">
-                <h3 className="font-semibold">{event.title}</h3>
-                <p className="text-sm text-muted-foreground">{format(parseISO(event.date), 'EEEE, MMMM d')} &bull; {formatTime(event.start_hour)}</p>
-                {event.location_name && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4"/>
-                        <span>{event.location_name}</span>
-                    </div>
-                )}
-                <Button asChild size="sm" className="mt-2">
-                  <Link href={`/event/${event.id}`}>View Details</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No nearby events found.</p>
-          </div>
-        )}
       </div>
     </>
   );
@@ -1105,24 +951,6 @@ export default function CalendarPage() {
         </Sheet>
       )}
 
-      {/* Nearby Events Sheet/Dialog */}
-      {!isMobile && (
-        <Dialog open={isNearbySheetOpen} onOpenChange={setIsNearbySheetOpen}>
-            <DialogContent>
-                <NearbyEventsContent events={nearbyEvents} onClose={() => setIsNearbySheetOpen(false)} />
-            </DialogContent>
-        </Dialog>
-      )}
-
-      {isMobile && (
-        <Sheet open={isNearbySheetOpen} onOpenChange={setIsNearbySheetOpen}>
-            <SheetContent side="bottom" className="rounded-t-xl max-h-[80vh]">
-                <NearbyEventsContent events={nearbyEvents} onClose={() => setIsNearbySheetOpen(false)} />
-            </SheetContent>
-        </Sheet>
-      )}
-
-
       {!isMobile && view === 'month' && (
         <div className="mt-8 text-center">
           {isAdmin ? (
@@ -1137,5 +965,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
