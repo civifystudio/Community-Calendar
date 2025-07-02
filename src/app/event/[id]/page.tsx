@@ -99,16 +99,6 @@ export default async function EventPage({ params }: { params: { id: string } }) 
               <h3 className="text-xl font-semibold">About this event</h3>
               <FormattedText text={event.details} className="text-muted-foreground" />
             </div>
-            {event.external_link && (
-                <div className="pt-4">
-                    <Button asChild className="w-full">
-                        <a href={event.external_link} target="_blank" rel="noopener noreferrer">
-                            <LinkIcon className="mr-2 h-4 w-4" />
-                            Visit Event Page
-                        </a>
-                    </Button>
-                </div>
-            )}
         </CardContent>
       </Card>
       <div className="mt-8">

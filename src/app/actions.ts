@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -11,7 +10,6 @@ export interface CalendarEvent {
   details: string;
   start_hour: number;
   end_hour: number;
-  external_link?: string | null;
   link?: string;
   color: string;
 }
@@ -76,7 +74,6 @@ export async function saveEvent(event: Partial<CalendarEvent>): Promise<Calendar
         details: event.details,
         start_hour: event.start_hour,
         end_hour: event.end_hour,
-        external_link: event.external_link || null,
         color: event.color || 'blue',
     };
 
