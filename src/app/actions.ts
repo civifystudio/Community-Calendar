@@ -90,11 +90,14 @@ export async function saveEvent(formData: FormData): Promise<CalendarEvent | nul
         const filePath = `${Date.now()}_${imageFile.name}`;
         const { error: uploadError } = await supabase.storage
             .from('events')
-            .upload(filePath, imageFile);
+            .upload(filePath, imageFile, {
+                cacheControl: '3600',
+                upsert: false
+            });
         
         if (uploadError) {
             console.error('Error uploading image:', uploadError);
-            throw new Error('Failed to upload image.');
+            throw new Error(`Failed to upload image: ${uploadError.message}`);
         }
 
         const { data: { publicUrl } } = supabase.storage
