@@ -316,8 +316,8 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
           {/* HEADER */}
           <div className="flex justify-between items-center flex-wrap gap-y-2">
               <div className="flex items-baseline gap-x-2">
-                <h1 className="text-4xl sm:text-5xl font-bold whitespace-nowrap">{selectedDate ? format(selectedDate, 'd') : '-'}</h1>
-                <h2 className="text-2xl sm:text-3xl font-semibold text-muted-foreground">{selectedDate ? format(selectedDate, 'EEEE') : 'Select a day'}</h2>
+                <h1 className="text-4xl sm:text-5xl font-bold whitespace-nowrap">{selectedDate ? format(selectedDate, 'EEEE') : 'Select a day'}</h1>
+                <h2 className="text-2xl sm:text-3xl font-semibold text-muted-foreground">{selectedDate ? format(selectedDate, 'd') : ''}</h2>
               </div>
               <div className="flex items-center gap-x-4">
                   <div className="flex items-center">
