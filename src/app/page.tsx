@@ -200,7 +200,7 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
           <div className="w-full md:w-1/3 flex flex-col">
             <div className='space-y-4 flex-grow'>
                <div className="flex justify-between items-center">
-                    <h1 className="text-5xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
+                    <h1 className="text-4xl sm:text-5xl font-bold whitespace-nowrap">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
                     {isAdmin && <Button size="sm" onClick={onAddEvent}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
                </div>
                <Separator />
