@@ -41,6 +41,19 @@ body {
     --sidebar-accent-foreground: 0 0% 9%;
     --sidebar-border: 0 0% 89.8%;
     --sidebar-ring: 0 0% 3.9%;
+
+    --event-blue-bg: 221 83% 95%;
+    --event-blue-fg: 221 83% 45%;
+    --event-blue-border: 221 83% 85%;
+    --event-green-bg: 145 63% 95%;
+    --event-green-fg: 145 63% 35%;
+    --event-green-border: 145 63% 85%;
+    --event-purple-bg: 262 83% 97%;
+    --event-purple-fg: 262 83% 55%;
+    --event-purple-border: 262 83% 87%;
+    --event-red-bg: 0 84% 97%;
+    --event-red-fg: 0 84% 47%;
+    --event-red-border: 0 84% 87%;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -75,6 +88,19 @@ body {
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 14.9%;
     --sidebar-ring: 0 0% 83.1%;
+
+    --event-blue-bg: 221 83% 15%;
+    --event-blue-fg: 221 83% 75%;
+    --event-blue-border: 221 83% 25%;
+    --event-green-bg: 145 63% 15%;
+    --event-green-fg: 145 63% 65%;
+    --event-green-border: 145 63% 25%;
+    --event-purple-bg: 262 83% 20%;
+    --event-purple-fg: 262 83% 78%;
+    --event-purple-border: 262 83% 30%;
+    --event-red-bg: 0 84% 20%;
+    --event-red-fg: 0 84% 70%;
+    --event-red-border: 0 84% 30%;
   }
 }
 

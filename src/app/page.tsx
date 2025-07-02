@@ -39,6 +39,7 @@ import {
   Clock,
   Link as LinkIcon,
   PartyPopper,
+  Check,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays, parseISO } from 'date-fns';
@@ -60,6 +61,25 @@ interface LaidOutEvent extends CalendarEvent {
 
 interface EventsByDate {
   [key: number]: CalendarEvent[];
+}
+
+const eventColorOptions = [
+    { name: 'blue', class: 'bg-event-blue-bg' },
+    { name: 'green', class: 'bg-event-green-bg' },
+    { name: 'purple', class: 'bg-event-purple-bg' },
+    { name: 'red', class: 'bg-event-red-bg' },
+];
+
+const eventColorClasses = {
+  blue: { bg: 'bg-event-blue-bg', text: 'text-event-blue-fg', border: 'border-event-blue-border' },
+  green: { bg: 'bg-event-green-bg', text: 'text-event-green-fg', border: 'border-event-green-border' },
+  purple: { bg: 'bg-event-purple-bg', text: 'text-event-purple-fg', border: 'border-event-purple-border' },
+  red: { bg: 'bg-event-red-bg', text: 'text-event-red-fg', border: 'border-event-red-border' },
+  default: { bg: 'bg-secondary', text: 'text-secondary-foreground', border: 'border-border' },
+};
+
+const getEventColor = (colorName: string | undefined) => {
+    return (eventColorClasses as any)[colorName || 'default'] || eventColorClasses.default;
 }
 
 interface ViewProps {
@@ -85,6 +105,7 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
     const [currentEventData, setCurrentEventData] = useState<Partial<CalendarEvent>>({
         title: '',
         details: '',
+        color: 'blue',
         ...event,
         date: event?.date ? format(parseISO(event.date), 'yyyy-MM-dd') : format(date, 'yyyy-MM-dd'),
         start_hour: event?.start_hour || 9,
@@ -182,6 +203,25 @@ const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event
                     <div className="space-y-2">
                         <Label htmlFor="end_hour">End Time</Label>
                         <Input id="end_hour" name="end_hour" type="time" value={decimalToTimeString(currentEventData.end_hour)} onChange={handleTimeChange} required />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label>Color</Label>
+                    <div className="flex gap-2">
+                        {eventColorOptions.map(color => (
+                            <button
+                                key={color.name}
+                                type="button"
+                                onClick={() => setCurrentEventData(prev => ({...prev, color: color.name}))}
+                                className={cn(
+                                    "h-8 w-8 rounded-full border-2 transition-transform transform hover:scale-110",
+                                    color.class,
+                                    currentEventData.color === color.name ? 'border-ring' : 'border-transparent'
+                                )}
+                            >
+                                {currentEventData.color === color.name && <Check className="h-5 w-5 mx-auto text-primary" />}
+                            </button>
+                        ))}
                     </div>
                 </div>
                 <div className="space-y-2">
@@ -312,6 +352,7 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                   const dayDate = day ? new Date(displayDate.getFullYear(), displayDate.getMonth(), day) : null;
                   const isSelected = dayDate && selectedDate && isSameDay(selectedDate, dayDate);
                   const isToday = dayDate && isSameDay(new Date(), dayDate);
+                  const dayEvents = day ? events[day] : [];
 
                   return (
                   <motion.div
@@ -325,9 +366,9 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                       onClick={() => {
                           if (dayDate) {
                               setSelectedDate(dayDate);
-                              const dayEvents = allEvents.filter(event => isSameDay(parseISO(event.date), dayDate));
-                              if (isMobile && dayEvents.length > 0) {
-                                  setDialogEvent(dayEvents);
+                              const eventsOnDay = allEvents.filter(event => isSameDay(parseISO(event.date), dayDate));
+                              if (isMobile && eventsOnDay.length > 0) {
+                                  setDialogEvent(eventsOnDay);
                               }
                           }
                       }}
@@ -339,8 +380,11 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                       `}
                     >
                       {day}
-                      {day && events[day] && events[day].length > 0 && (
-                         <div className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 ${isSelected ? 'bg-primary-foreground' : 'bg-foreground'} rounded-full`}></div>
+                      {dayEvents && dayEvents.length > 0 && (
+                         <div className={cn(
+                            `absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full`,
+                             getEventColor(dayEvents[0].color).bg
+                         )}></div>
                       )}
                     </Button>
                   </motion.div>
@@ -524,7 +568,10 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                       {day}
                     </Button>
                     {day && events[day] && events[day].length > 0 && (
-                      <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 ${isSelected ? 'bg-primary-foreground' : 'bg-foreground'} rounded-full`}></div>
+                      <div className={cn(
+                        `absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full`,
+                        getEventColor(events[day][0].color).bg
+                      )}></div>
                     )}
                  </motion.div>
               )})}
@@ -581,6 +628,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
 
                                const top = ((eventStart - gridStartHour) / totalHoursInGrid) * 100;
                                const height = ((eventEnd - eventStart) / totalHoursInGrid) * 100;
+                               const color = getEventColor(event.color);
                                
                                return (
                                  <motion.div
@@ -604,7 +652,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                                         setDialogEvent([event]);
                                    }}
                                   >
-                                   <div className="h-full p-2 rounded-lg text-foreground text-xs flex flex-col border bg-secondary hover:bg-accent transition-colors">
+                                   <div className={cn("h-full p-2 rounded-lg text-xs flex flex-col border hover:bg-accent transition-colors", color.bg, color.text, color.border)}>
                                      <span className="font-bold truncate">{event.title}</span>
                                      <span className='truncate'>{event.details}</span>
                                    </div>
@@ -856,7 +904,7 @@ export default function CalendarPage() {
         </AnimatePresence>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogContent className="sm:max-w-xl max-h-[90vh] h-full p-0 flex flex-col">
-                {editingEvent && selectedDate && (
+                {selectedDate && (
                     <EventForm 
                     event={editingEvent} 
                     date={selectedDate} 

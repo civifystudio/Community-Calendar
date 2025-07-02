@@ -65,6 +65,28 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        event: {
+          blue: {
+            bg: 'hsl(var(--event-blue-bg))',
+            fg: 'hsl(var(--event-blue-fg))',
+            border: 'hsl(var(--event-blue-border))',
+          },
+          green: {
+            bg: 'hsl(var(--event-green-bg))',
+            fg: 'hsl(var(--event-green-fg))',
+            border: 'hsl(var(--event-green-border))',
+          },
+          purple: {
+            bg: 'hsl(var(--event-purple-bg))',
+            fg: 'hsl(var(--event-purple-fg))',
+            border: 'hsl(var(--event-purple-border))',
+          },
+          red: {
+            bg: 'hsl(var(--event-red-bg))',
+            fg: 'hsl(var(--event-red-fg))',
+            border: 'hsl(var(--event-red-border))',
+          },
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
