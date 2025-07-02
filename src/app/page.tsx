@@ -98,31 +98,17 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
       <form onSubmit={handleSubmit}>
         <DialogHeader>
           <DialogTitle>{event?.id ? 'Edit Event' : 'Add Event'}</DialogTitle>
-          <DialogDescription>Fill in the details for your event on {format(selectedDate, 'MMMM d, yyyy')}.</DialogDescription>
+          <DialogDescription>Fill in the details for your event.</DialogDescription>
         </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" value={title} onChange={e => setTitle(e.target.value)} required className="bg-black/30 border-gray-600"/>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="details">Details</Label>
-            <Textarea id="details" value={details} onChange={e => setDetails(e.target.value)} required className="bg-black/30 border-gray-600"/>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate as (date?: Date) => void}
-              className="rounded-md border bg-black/30 border-gray-600"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="link">Link</Label>
-            <Input id="link" type="url" value={link} onChange={e => setLink(e.target.value)} className="bg-black/30 border-gray-600"/>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="py-6 grid sm:grid-cols-2 gap-x-4 gap-y-6">
+            <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="title">Title</Label>
+                <Input id="title" value={title} onChange={e => setTitle(e.target.value)} required className="bg-black/30 border-gray-600"/>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="details">Details</Label>
+                <Textarea id="details" value={details} onChange={e => setDetails(e.target.value)} required className="bg-black/30 border-gray-600"/>
+            </div>
              <div className="space-y-2">
                 <Label htmlFor="startHour">Start Time (24h)</Label>
                 <Input id="startHour" type="number" min="0" max="23" value={startHour} onChange={e => setStartHour(Number(e.target.value))} required className="bg-black/30 border-gray-600"/>
@@ -131,27 +117,39 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
                 <Label htmlFor="endHour">End Time (24h)</Label>
                 <Input id="endHour" type="number" min="0" max="24" value={endHour} onChange={e => setEndHour(Number(e.target.value))} required className="bg-black/30 border-gray-600"/>
              </div>
-          </div>
-           <div className="space-y-2">
-            <Label htmlFor="color">Color</Label>
-            <Select value={color} onValueChange={(value: 'green' | 'blue' | 'purple' | 'yellow') => setColor(value)}>
-                <SelectTrigger id="color" className="bg-black/30 border-gray-600">
-                    <SelectValue placeholder="Select a color" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="blue">Blue</SelectItem>
-                    <SelectItem value="green">Green</SelectItem>
-                    <SelectItem value="purple">Purple</SelectItem>
-                    <SelectItem value="yellow">Yellow</SelectItem>
-                </SelectContent>
-            </Select>
-           </div>
+             <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="link">Link (Optional)</Label>
+                <Input id="link" type="url" value={link} placeholder="https://example.com" onChange={e => setLink(e.target.value)} className="bg-black/30 border-gray-600"/>
+             </div>
+              <div className="space-y-2">
+                <Label htmlFor="color">Color</Label>
+                <Select value={color} onValueChange={(value: 'green' | 'blue' | 'purple' | 'yellow') => setColor(value)}>
+                    <SelectTrigger id="color" className="bg-black/30 border-gray-600">
+                        <SelectValue placeholder="Select a color" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="blue">Blue</SelectItem>
+                        <SelectItem value="green">Green</SelectItem>
+                        <SelectItem value="purple">Purple</SelectItem>
+                        <SelectItem value="yellow">Yellow</SelectItem>
+                    </SelectContent>
+                </Select>
+               </div>
+            <div className="space-y-2 sm:row-start-4">
+                <Label>Date</Label>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate as (date?: Date) => void}
+                  className="rounded-md border bg-black/30 border-gray-600"
+                />
+            </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
           </DialogClose>
-          <Button type="submit">Save Event</Button>
+          <Button type="submit" className="bg-white text-black hover:bg-gray-300">Save Event</Button>
         </DialogFooter>
       </form>
     );
@@ -184,7 +182,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
             <div className='space-y-4 flex-grow'>
                <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
-                    {isAdmin && <Button size="sm" onClick={onAddEvent}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
+                    {isAdmin && <Button size="sm" onClick={onAddEvent} className="bg-white text-black hover:bg-gray-300"><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
                </div>
                <Separator className="bg-gray-700/50" />
               
@@ -246,7 +244,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
             <div className="grid grid-cols-7 gap-4">
               {calendarDays.map((day, index) => {
                 const dayDate = day ? new Date(displayDate.getFullYear(), displayDate.getMonth(), day) : null;
-                const isSelected = dayDate && isSameDay(selectedDate, dayDate);
+                const isSelected = dayDate && selectedDate && isSameDay(selectedDate, dayDate);
                 const isToday = dayDate && isSameDay(new Date(), dayDate);
 
                 return (
@@ -273,12 +271,7 @@ const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisp
                   >
                     {day}
                     {day && events[day] && events[day].length > 0 && (
-                      <div className="absolute bottom-2 left-0 right-0 flex flex-col items-start px-1">
-                        {events[day].slice(0, 3).map((event, index) => (
-                          <div key={index} className={`text-xs text-white ${isSelected ? 'text-black' : ''} truncate`}>{event.title}</div>
-                        ))}
-                        {events[day].length > 3 && <div className={`text-xs text-white ${isSelected ? 'text-black' : ''}`}>...</div>}
-                      </div>
+                       <div className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 ${isSelected ? 'bg-black' : 'bg-white'} rounded-full`}></div>
                     )}
                   </Button>
                 </motion.div>
@@ -363,7 +356,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
 
   const timeSlots = Array.from({ length: 15 }, (_, i) => `${(i + 3).toString().padStart(2, '0')}:00`);
   
-  const selectedDayEvents = isSameMonth(selectedDate, displayDate) ? events[getDate(selectedDate)] : [];
+  const selectedDayEvents = selectedDate && isSameMonth(selectedDate, displayDate) ? events[getDate(selectedDate)] : [];
 
   const gridStartHour = 3;
   const totalHoursInGrid = 15;
@@ -395,7 +388,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
             <div>
               <div className="flex justify-between items-center">
                 <h1 className="text-xl font-bold">Community Events</h1>
-                {isAdmin && <Button size="sm" onClick={onAddEvent}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
+                {isAdmin && <Button size="sm" onClick={onAddEvent} className="bg-white text-black hover:bg-gray-300"><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
               </div>
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -441,7 +434,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
             <div className="grid grid-cols-7 gap-1">
               {miniCalendarDays.map((day, index) => {
                  const dayDate = day ? new Date(displayDate.getFullYear(), displayDate.getMonth(), day) : null;
-                 const isSelected = dayDate && isSameDay(selectedDate, dayDate);
+                 const isSelected = dayDate && selectedDate && isSameDay(selectedDate, dayDate);
                  return (
                  <motion.div 
                     key={index} 
@@ -466,7 +459,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
         <div className="flex-1 flex flex-col min-h-0">
           <header className="p-4 flex justify-between items-center flex-wrap gap-y-2 border-b border-gray-700/50 shrink-0">
             <div className="flex items-center gap-2">
-              <h2 className="font-semibold">{format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}</h2>
+              <h2 className="font-semibold">{selectedDate && format(weekDays[0], 'MMM d')} - {selectedDate && format(weekDays[6], 'MMM d, yyyy')}</h2>
               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handlePrevWeek}><ChevronLeft className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:bg-gray-700" onClick={handleNextWeek}><ChevronRight className="w-4 h-4" /></Button>
             </div>
@@ -524,7 +517,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
                                  marginLeft: '1px',
                                 }}
                                 onClick={() => {
-                                  setSelectedDate(day);
+                                  if (selectedDate) setSelectedDate(day);
                                   setDialogEvent(events[day.getDate()])
                                 }}
                               >
@@ -623,9 +616,11 @@ export default function CalendarPage() {
   };
 
   const handleEditEventClick = (event: CalendarEvent) => {
-      setEditingEvent(event);
-      setSelectedDate(parseISO(event.date));
-      setIsFormOpen(true);
+      if (selectedDate) {
+        setEditingEvent(event);
+        setSelectedDate(parseISO(event.date));
+        setIsFormOpen(true);
+      }
   };
   
   const handleSaveEvent = async (eventData: CalendarEvent | Omit<CalendarEvent, 'id'>) => {
@@ -702,12 +697,12 @@ export default function CalendarPage() {
           )}
       </AnimatePresence>
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50">
-            {editingEvent && (
+        <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50 sm:max-w-lg">
+            {editingEvent && selectedDate && (
                 <EventForm event={editingEvent} date={selectedDate} onSave={handleSaveEvent} onCancel={() => setIsFormOpen(false)} />
             )}
              {isAdmin && editingEvent?.id && (
-                <Button variant="destructive" className="mt-4" onClick={() => handleDeleteEvent(editingEvent.id)}>
+                <Button variant="outline" className="mt-4" onClick={() => handleDeleteEvent(editingEvent.id)}>
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Event
                 </Button>
             )}
@@ -749,3 +744,5 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
