@@ -784,7 +784,7 @@ export default function CalendarPage() {
   );
 
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen p-2 sm:p-4 w-full">
+    <div className="flex flex-col items-center justify-start min-h-screen p-2 sm:p-4 md:p-6 w-full">
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
@@ -818,8 +818,8 @@ export default function CalendarPage() {
       )}
 
       {isMobile && (
-        <Sheet open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)} side="bottom">
-            <SheetContent className="bg-[#1C1C1C] text-white border-gray-700/50">
+        <Sheet open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
+            <SheetContent side="bottom" className="bg-[#1C1C1C] text-white border-gray-700/50">
                 <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-gray-600 mb-4" />
                 {dialogEvent && dialogEvent.length > 0 && (
                      <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
@@ -840,5 +840,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
