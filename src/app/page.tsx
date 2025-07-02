@@ -390,8 +390,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
         <div className="w-full md:w-[280px] p-4 flex flex-col border-b md:border-b-0 md:border-r border-gray-700/50 text-white">
           <div className='flex flex-col space-y-4 flex-grow'>
             <div>
-              <div className="flex justify-between items-center">
-                <h1 className="text-xl font-bold">Community Events</h1>
+              <div className="flex justify-end items-center">
                 {isAdmin && <Button size="sm" onClick={onAddEvent} className="bg-white text-black hover:bg-gray-300"><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
               </div>
                 <AnimatePresence mode="wait">
@@ -771,6 +770,8 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
 
     
 
