@@ -74,10 +74,24 @@ interface ViewProps {
 const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (event: CalendarEvent | Omit<CalendarEvent, "id" | "link">) => void, onCancel: () => void }) => {
     const [title, setTitle] = useState(event?.title || '');
     const [details, setDetails] = useState(event?.details || '');
-    const [startHour, setStartHour] = useState(event?.start_hour || 9);
-    const [endHour, setEndHour] = useState(event?.end_hour || 10);
     const [color, setColor] = useState<CalendarEvent['color']>(event?.color || 'blue');
     const [selectedDate, setSelectedDate] = useState<Date>(date);
+
+    const decimalToTimeString = (decimalHour: number): string => {
+        if (isNaN(decimalHour)) return "09:00";
+        const hours = Math.floor(decimalHour);
+        const minutes = Math.round((decimalHour - hours) * 60);
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+
+    const timeStringToDecimal = (timeString: string): number => {
+        const [hours, minutes] = timeString.split(':').map(Number);
+        if (isNaN(hours) || isNaN(minutes)) return 0;
+        return hours + minutes / 60;
+    }
+
+    const [startTime, setStartTime] = useState(decimalToTimeString(event?.start_hour || 9));
+    const [endTime, setEndTime] = useState(decimalToTimeString(event?.end_hour || 10));
   
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -86,8 +100,8 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
         date: format(selectedDate, 'yyyy-MM-dd'),
         title,
         details,
-        start_hour: Number(startHour),
-        end_hour: Number(endHour),
+        start_hour: timeStringToDecimal(startTime),
+        end_hour: timeStringToDecimal(endTime),
         color,
       };
       
@@ -117,12 +131,12 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startHour">Start Time (24h)</Label>
-                <Input id="startHour" type="number" min="0" max="23" value={startHour} onChange={(e) => setStartHour(Number(e.target.value))} required className="bg-black/30 border-gray-600" />
+                <Label htmlFor="startTime">Start Time</Label>
+                <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required className="bg-black/30 border-gray-600" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endHour">End Time (24h)</Label>
-                <Input id="endHour" type="number" min="0" max="24" value={endHour} onChange={(e) => setEndHour(Number(e.target.value))} required className="bg-black/30 border-gray-600" />
+                <Label htmlFor="endTime">End Time</Label>
+                <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required className="bg-black/30 border-gray-600" />
               </div>
             </div>
             <div className="space-y-2">
@@ -190,7 +204,7 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
           <div className="w-full md:w-1/3 flex flex-col">
             <div className='space-y-4 flex-grow'>
                <div className="flex justify-between items-center">
-                    <h1 className="text-3xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
+                    <h1 className="text-4xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
                     {isAdmin && <Button size="sm" onClick={onAddEvent} className="bg-white text-black hover:bg-gray-300"><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
                </div>
                <Separator className="bg-gray-700/50" />
@@ -209,8 +223,8 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                       {selectedDayEvents.map((event, index) => (
                         <div key={index} className="flex justify-between items-start">
                           <div>
-                            <p className="text-base font-semibold">{event.title}</p>
-                            <p className="text-sm text-gray-400">{event.details}</p>
+                            <p className="text-xl font-semibold">{event.title}</p>
+                            <p className="text-lg text-gray-400">{event.details}</p>
                           </div>
                            {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditEvent(event)}><Edit className="h-4 w-4"/></Button>}
                         </div>
@@ -841,3 +855,5 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
