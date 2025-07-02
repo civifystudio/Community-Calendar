@@ -190,7 +190,7 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
           <div className="w-full md:w-1/3 flex flex-col">
             <div className='space-y-4 flex-grow'>
                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
+                    <h1 className="text-3xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
                     {isAdmin && <Button size="sm" onClick={onAddEvent} className="bg-white text-black hover:bg-gray-300"><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>}
                </div>
                <Separator className="bg-gray-700/50" />
@@ -202,15 +202,15 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="space-y-4 text-sm text-gray-300 min-h-[100px]"
+                  className="space-y-4 text-gray-300 min-h-[100px]"
                 >
                   {selectedDayEvents && selectedDayEvents.length > 0 ? (
                     <div className="space-y-3">
                       {selectedDayEvents.map((event, index) => (
                         <div key={index} className="flex justify-between items-start">
                           <div>
-                            <p className="font-semibold">{event.title}</p>
-                            <p className="text-gray-400 text-xs">{event.details}</p>
+                            <p className="text-base font-semibold">{event.title}</p>
+                            <p className="text-sm text-gray-400">{event.details}</p>
                           </div>
                            {isAdmin && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditEvent(event)}><Edit className="h-4 w-4"/></Button>}
                         </div>
