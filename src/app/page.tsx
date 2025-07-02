@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
@@ -35,6 +35,7 @@ import {
   Edit,
   Share2,
   Copy,
+  Clock,
   Link as LinkIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -74,11 +75,102 @@ interface ViewProps {
   isMobile: boolean | undefined;
 }
 
-const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (formData: FormData) => void, onCancel: () => void }) => {
+const EventPagePreview = ({ event, imagePreviewUrl }: { event: Partial<CalendarEvent>, imagePreviewUrl: string | null }) => {
+  const formatTime = (hour: number) => {
+    const h = Math.floor(hour);
+    const m = Math.round((hour - h) * 60);
+    const minutes = m.toString().padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const formattedHour = h % 12 || 12;
+    return `${formattedHour}:${minutes} ${ampm}`;
+  };
+
+  const eventDate = event.date ? parseISO(event.date) : new Date();
+  
+  const title = event.title || 'Your Event Title';
+  const details = event.details || 'Your event details will appear here.';
+  const start_hour = event.start_hour ?? 9;
+  const end_hour = event.end_hour ?? 10;
+  const external_link = event.external_link || '';
+  const imageUrl = imagePreviewUrl || event.image_url || `https://placehold.co/800x600.png`;
+
+  return (
+    <div className="bg-background rounded-lg h-full overflow-y-auto p-1">
+        <Card className="w-full h-full bg-card text-card-foreground border-none shadow-none flex flex-col">
+            <CardHeader className="p-0">
+                <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-muted">
+                    <Image
+                        src={imageUrl}
+                        alt="Event flyer preview"
+                        layout="fill"
+                        objectFit="cover"
+                        data-ai-hint="event flyer"
+                    />
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-4 p-4 flex-grow flex flex-col">
+                <CardTitle className="text-2xl font-bold">{title}</CardTitle>
+                <Separator />
+                <div className="grid grid-cols-1 gap-4 text-base">
+                    <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-muted-foreground"/>
+                        <span>{format(eventDate, 'EEEE, MMMM d, yyyy')}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 text-muted-foreground"/>
+                        <span>{formatTime(start_hour)} - {formatTime(end_hour)}</span>
+                    </div>
+                </div>
+                <div className="space-y-2 flex-grow">
+                    <h3 className="text-xl font-semibold">About this event</h3>
+                    <div className="text-muted-foreground overflow-y-auto max-h-48">
+                        <FormattedText text={details} />
+                    </div>
+                </div>
+                {external_link && (
+                    <div className="pt-4 mt-auto">
+                        <Button asChild className="w-full" disabled>
+                            <a href={external_link}>
+                                <LinkIcon className="mr-2 h-4 w-4" />
+                                Visit Event Page
+                            </a>
+                        </Button>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    </div>
+  );
+};
+
+
+const EventForm = ({ event, date, onSave, onCancel, isAdmin, onDelete }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (formData: FormData) => void, onCancel: () => void, isAdmin: boolean, onDelete: (id: number) => void }) => {
     const [title, setTitle] = useState(event?.title || '');
     const [details, setDetails] = useState(event?.details || '');
     const [externalLink, setExternalLink] = useState(event?.external_link || '');
-    const [selectedDate, setSelectedDate] = useState<Date>(date);
+    const [selectedDate, setSelectedDate] = useState<Date>(event?.date ? parseISO(event.date) : date);
+    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Clean up the object URL to avoid memory leaks
+        return () => {
+            if (imagePreviewUrl) {
+                URL.revokeObjectURL(imagePreviewUrl);
+            }
+        };
+    }, [imagePreviewUrl]);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (imagePreviewUrl) {
+            URL.revokeObjectURL(imagePreviewUrl);
+        }
+        if (file) {
+            setImagePreviewUrl(URL.createObjectURL(file));
+        } else {
+            setImagePreviewUrl(null);
+        }
+    };
 
     const decimalToTimeString = (decimalHour: number): string => {
         if (isNaN(decimalHour)) return "09:00";
@@ -113,66 +205,90 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
         }
       onSave(formData);
     };
+
+    const previewEventData: Partial<CalendarEvent> = {
+        ...event,
+        title,
+        details,
+        external_link: externalLink,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        start_hour: timeStringToDecimal(startTime),
+        end_hour: timeStringToDecimal(endTime),
+    };
   
     return (
-      <form onSubmit={handleSubmit}>
-        <DialogHeader>
-          <DialogTitle>{event?.id ? 'Edit Event' : 'Add Event'}</DialogTitle>
-          <DialogDescription>Fill in the details for your event.</DialogDescription>
-        </DialogHeader>
-        <div className="py-6 grid md:grid-cols-2 gap-x-8 gap-y-6">
-          <div className="flex flex-col gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="details">Details</Label>
-              <Textarea id="details" name="details" value={details} onChange={(e) => setDetails(e.target.value)} required />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="external_link">External Link</Label>
-                <Input id="external_link" name="external_link" value={externalLink} onChange={(e) => setExternalLink(e.target.value)} placeholder="https://example.com/tickets" />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="image_url">Event Flyer</Label>
-                <Input id="image_url" name="image_url" type="file" accept="image/*" />
-                {event?.image_url && (
-                    <div className="text-sm text-muted-foreground">
-                        Current image: <a href={event.image_url} target="_blank" rel="noreferrer" className="underline">View</a>
+        <div className="grid md:grid-cols-2 gap-x-8 h-full">
+            <div className="flex flex-col overflow-hidden">
+                <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                    <DialogHeader>
+                        <DialogTitle>{event?.id ? 'Edit Event' : 'Add Event'}</DialogTitle>
+                        <DialogDescription>Fill in the details for your event. See a live preview on the right.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 grid gap-y-6 flex-grow overflow-y-auto pr-4 -mr-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="title">Title</Label>
+                            <Input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="details">Details</Label>
+                            <Textarea id="details" name="details" value={details} onChange={(e) => setDetails(e.target.value)} required rows={5} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="external_link">External Link</Label>
+                            <Input id="external_link" name="external_link" value={externalLink} onChange={(e) => setExternalLink(e.target.value)} placeholder="https://example.com/tickets" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="image_url">Event Flyer</Label>
+                            <Input id="image_url" name="image_url" type="file" accept="image/*" onChange={handleImageChange} />
+                            {event?.image_url && !imagePreviewUrl && (
+                                <div className="text-sm text-muted-foreground">
+                                    Current image: <a href={event.image_url} target="_blank" rel="noreferrer" className="underline">View</a>
+                                </div>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="startTime">Start Time</Label>
+                                <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="endTime">End Time</Label>
+                                <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Date</Label>
+                            <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(d) => d && setSelectedDate(d)}
+                                className="rounded-md border w-full"
+                            />
+                        </div>
                     </div>
-                )}
+                    <DialogFooter className="mt-auto pt-6 border-t flex justify-between w-full">
+                        <div>
+                            {isAdmin && event?.id && (
+                                <Button type="button" variant="destructive" onClick={() => onDelete(event.id!)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </Button>
+                            )}
+                        </div>
+                        <div className="flex gap-2">
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+                            </DialogClose>
+                            <Button type="submit">Save Event</Button>
+                        </div>
+                    </DialogFooter>
+                </form>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startTime">Start Time</Label>
-                <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="endTime">End Time</Label>
-                <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
-              </div>
+            <div className="hidden md:block bg-muted/50 rounded-lg overflow-hidden">
+                <EventPagePreview event={previewEventData} imagePreviewUrl={imagePreviewUrl} />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Date</Label>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate as (date?: Date) => void}
-              className="rounded-md border w-full"
-            />
-          </div>
         </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-          </DialogClose>
-          <Button type="submit">Save Event</Button>
-        </DialogFooter>
-      </form>
     );
-  };
+};
 
 
 const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent, isMobile }: ViewProps) => {
@@ -199,7 +315,10 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
         <CardContent className="p-2 sm:p-4 md:p-6 flex flex-col gap-4">
           {/* HEADER */}
           <div className="flex justify-between items-center flex-wrap gap-y-2">
-              <h1 className="text-4xl sm:text-5xl font-bold">{selectedDate ? format(selectedDate, 'EEEE, d') : 'Select a day'}</h1>
+              <div className="flex items-baseline gap-x-2">
+                <h1 className="text-4xl sm:text-5xl font-bold whitespace-nowrap">{selectedDate ? format(selectedDate, 'd') : '-'}</h1>
+                <h2 className="text-2xl sm:text-3xl font-semibold text-muted-foreground">{selectedDate ? format(selectedDate, 'EEEE') : 'Select a day'}</h2>
+              </div>
               <div className="flex items-center gap-x-4">
                   <div className="flex items-center">
                       <h2 className="font-semibold text-xl text-muted-foreground">{format(displayDate, 'MMMM yyyy')}</h2>
@@ -810,16 +929,16 @@ export default function CalendarPage() {
           )}
       </AnimatePresence>
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-6xl max-h-[85vh] h-full p-0">
             {editingEvent && selectedDate && (
-                <EventForm event={editingEvent} date={selectedDate} onSave={handleSaveEvent} onCancel={() => setIsFormOpen(false)} />
-            )}
-             {isAdmin && editingEvent?.id && (
-                <div className="flex justify-between items-center mt-4">
-                  <Button variant="destructive" onClick={() => handleDeleteEvent(editingEvent.id)}>
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete Event
-                  </Button>
-                </div>
+                <EventForm 
+                  event={editingEvent} 
+                  date={selectedDate} 
+                  onSave={handleSaveEvent} 
+                  onCancel={() => setIsFormOpen(false)}
+                  isAdmin={isAdmin}
+                  onDelete={handleDeleteEvent}
+                />
             )}
         </DialogContent>
       </Dialog>
