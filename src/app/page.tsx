@@ -47,11 +47,8 @@ interface EventsByDate {
   [key: number]: CalendarEvent[];
 }
 
-interface EventsByDateAndMonth {
-  [key: string]: EventsByDate; // Key is YYYY-MM
-}
-
 interface ViewProps {
+  allEvents: CalendarEvent[];
   events: EventsByDate;
   view: 'month' | 'week';
   setView: React.Dispatch<React.SetStateAction<'month' | 'week'>>;
@@ -159,14 +156,14 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
   };
 
 
-const MonthView = ({ events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent }: ViewProps) => {
+const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent }: ViewProps) => {
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   
   const firstDayOfMonth = getDay(new Date(displayDate.getFullYear(), displayDate.getMonth(), 1));
   const daysInMonth = getDaysInMonth(displayDate);
   const calendarDays = [...Array(firstDayOfMonth).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   
-  const selectedDayEvents = selectedDate && isSameMonth(selectedDate, displayDate) ? events[getDate(selectedDate)] : [];
+  const selectedDayEvents = selectedDate ? allEvents.filter(event => isSameDay(parseISO(event.date), selectedDate)) : [];
 
   const handlePrevMonth = () => setDisplayDate(subMonths(displayDate, 1));
   const handleNextMonth = () => setDisplayDate(addMonths(displayDate, 1));
@@ -347,7 +344,7 @@ const getEventLayouts = (dayEvents: CalendarEvent[]): LaidOutEvent[] => {
 };
 
 
-function WeekView({ events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent }: ViewProps) {
+function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent }: ViewProps) {
   const miniCalendarDaysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   const firstDayOfMonth = getDay(new Date(displayDate.getFullYear(), displayDate.getMonth(), 1));
@@ -357,12 +354,26 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
   const weekDays = Array.from({length: 7}, (_, i) => addDays(weekStart, i));
 
-  const timeSlots = Array.from({ length: 15 }, (_, i) => `${(i + 3).toString().padStart(2, '0')}:00`);
-  
-  const selectedDayEvents = selectedDate && isSameMonth(selectedDate, displayDate) ? events[getDate(selectedDate)] : [];
+  const weekEvents = allEvents.filter(event => {
+    const eventDate = parseISO(event.date);
+    return weekDays.some(weekDay => isSameDay(eventDate, weekDay));
+  });
 
-  const gridStartHour = 3;
-  const totalHoursInGrid = 15;
+  let minHour = 8;
+  let maxHour = 18;
+
+  if (weekEvents.length > 0) {
+    minHour = Math.min(...weekEvents.map(e => e.start_hour));
+    maxHour = Math.max(...weekEvents.map(e => e.end_hour));
+  }
+  
+  const gridStartHour = Math.max(0, Math.floor(minHour) - 1);
+  const gridEndHour = Math.min(24, Math.ceil(maxHour) + 1);
+  const totalHoursInGrid = Math.max(1, gridEndHour - gridStartHour);
+  
+  const timeSlots = Array.from({ length: totalHoursInGrid }, (_, i) => `${(i + gridStartHour).toString().padStart(2, '0')}:00`);
+  
+  const selectedDayEvents = selectedDate ? allEvents.filter(event => isSameDay(parseISO(event.date), selectedDate)) : [];
 
   const eventColorClasses = {
     green: 'bg-green-500/20 border-green-500/50 hover:bg-green-500/30 transition-colors',
@@ -497,16 +508,20 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
                   </div>
                   <div className="flex-1 grid grid-cols-7">
                     {weekDays.map((day) => {
-                       const dayEvents = (events[day.getDate()]) || [];
-                       const filteredEvents = dayEvents.filter(event => event.start_hour >= gridStartHour);
-                       const laidOutEvents = getEventLayouts(filteredEvents);
+                       const dayEvents = allEvents.filter(event => isSameDay(parseISO(event.date), day));
+                       const laidOutEvents = getEventLayouts(dayEvents);
                        return (
                           <div key={day.toString()} className="flex-1 border-l border-gray-700/50 relative flex flex-col">
                             {timeSlots.map((_, index) => <div key={index} className="flex-1 border-b border-gray-700/50"></div>)}
                             <AnimatePresence>
-                            {laidOutEvents.map((event) => {
-                               const top = ((event.start_hour - gridStartHour) / totalHoursInGrid) * 100;
-                               const height = ((event.end_hour - event.start_hour) / totalHoursInGrid) * 100;
+                            {laidOutEvents
+                              .filter(event => event.end_hour > gridStartHour && event.start_hour < gridEndHour)
+                              .map((event) => {
+                               const eventStart = Math.max(event.start_hour, gridStartHour);
+                               const eventEnd = Math.min(event.end_hour, gridEndHour);
+
+                               const top = ((eventStart - gridStartHour) / totalHoursInGrid) * 100;
+                               const height = ((eventEnd - eventStart) / totalHoursInGrid) * 100;
                                
                                return (
                                  <motion.div
@@ -525,10 +540,7 @@ function WeekView({ events, view, setView, setDialogEvent, displayDate, setDispl
                                      width: `calc(${event.width}% - 2px)`,
                                      marginLeft: '1px',
                                     }}
-                                   onClick={() => {
-                                      if (selectedDate) setSelectedDate(day);
-                                      setDialogEvent(events[day.getDate()])
-                                    }}
+                                   onClick={() => setSelectedDate(day)}
                                   >
                                    <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col border ${eventColorClasses[event.color as keyof typeof eventColorClasses]}`}>
                                      <span className="font-bold truncate">{event.title}</span>
@@ -726,10 +738,13 @@ export default function CalendarPage() {
       return acc;
   }, {} as EventsByDate);
 
-  const viewProps = { events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick };
+  const viewProps = { allEvents, events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 w-full">
+    <div className="flex flex-col items-center justify-start min-h-screen p-2 sm:p-4 w-full">
+        <div className="w-full max-w-4xl mx-auto my-8 text-center">
+            <h1 className="text-3xl font-bold tracking-tight">Upcoming Community Events</h1>
+        </div>
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
@@ -743,9 +758,11 @@ export default function CalendarPage() {
                 <EventForm event={editingEvent} date={selectedDate} onSave={handleSaveEvent} onCancel={() => setIsFormOpen(false)} />
             )}
              {isAdmin && editingEvent?.id && (
-                <Button variant="outline" className="mt-4" onClick={() => handleDeleteEvent(editingEvent.id)}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete Event
-                </Button>
+                <div className="flex justify-between items-center mt-4">
+                  <Button variant="destructive" onClick={() => handleDeleteEvent(editingEvent.id)}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete Event
+                  </Button>
+                </div>
             )}
         </DialogContent>
       </Dialog>
