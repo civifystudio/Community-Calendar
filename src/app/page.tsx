@@ -410,9 +410,9 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="w-full max-w-7xl flex"
+      className="w-full flex-1 flex"
     >
-      <div className="flex w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
+      <div className="flex w-full bg-[#1C1C1C] overflow-hidden">
         {/* Left Panel */}
         <div className="hidden p-4 md:flex flex-col md:w-[280px] lg:w-[320px] border-r border-gray-700/50 text-white">
           <div className='flex flex-col space-y-4 flex-grow'>
@@ -786,7 +786,7 @@ export default function CalendarPage() {
   );
 
   return (
-    <div className={"min-h-screen flex flex-col items-center w-full p-2 sm:p-4 md:p-6 " + (view === 'month' ? 'justify-center' : 'pt-6')}>
+    <div className={"flex flex-col w-full " + (view === 'month' ? "min-h-screen items-center justify-center p-2 sm:p-4 md:p-6" : "h-screen")}>
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
