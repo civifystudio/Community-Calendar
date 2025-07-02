@@ -18,11 +18,11 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import {
   ChevronLeft,
   ChevronRight,
@@ -663,9 +663,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                                     }}
                                    onClick={() => {
                                         setSelectedDate(day);
-                                        if (isMobile) {
-                                            setDialogEvent([event]);
-                                        }
+                                        setDialogEvent([event]);
                                    }}
                                   >
                                    <div className="h-full p-2 rounded-lg text-foreground text-xs flex flex-col border bg-secondary hover:bg-accent transition-colors">
@@ -856,51 +854,45 @@ export default function CalendarPage() {
   const viewProps = { allEvents, events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick, isMobile };
 
   const EventDetailsContent = ({ events, onClose }: { events: CalendarEvent[], onClose: () => void }) => (
-    <>
-      <SheetHeader>
-        <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mb-4" />
-        <SheetTitle>Events for {format(parseISO(events[0].date), 'MMMM d')}</SheetTitle>
-      </SheetHeader>
-      <div className="py-4 space-y-4 overflow-y-auto pr-4 -mr-4">
-        {events.map((event, index) => (
-          <div key={index} className="space-y-3 border-b border-border pb-4 last:border-b-0 last:pb-0">
-             {event.image_url && (
-              <div className="relative w-full h-48 rounded-md overflow-hidden">
-                <Image src={event.image_url} alt={event.title} layout="fill" objectFit="cover" />
-              </div>
-            )}
-            <h3 className="font-semibold text-lg">{event.title}</h3>
-            <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
-            <FormattedText text={event.details} className="text-sm text-muted-foreground mt-1" />
-            <div className="flex flex-wrap gap-2 pt-2">
-                {isAdmin && <Button size="sm" variant="outline" onClick={() => { onClose(); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
-                {event.link && (
-                  <Button asChild size="sm" variant="outline">
-                      <Link href={event.link}>
-                          <Share2 className="mr-2 h-4 w-4"/>
-                          View Page
-                      </Link>
-                  </Button>
-                )}
-                {event.external_link && (
-                  <Button asChild size="sm" variant="outline">
-                    <a href={event.external_link} target="_blank" rel="noopener noreferrer">
-                      <LinkIcon className="mr-2 h-4 w-4" />
-                      Event Link
-                    </a>
-                  </Button>
-                )}
-                {event.link && (
-                  <Button size="sm" variant="secondary" onClick={() => copyLink(event.link!)}>
-                      <Copy className="mr-2 h-4 w-4"/>
-                      Copy Link
-                  </Button>
-                )}
+    <div className="space-y-4">
+      {events.map((event, index) => (
+        <div key={index} className="space-y-3 border-b border-border pb-4 last:border-b-0 last:pb-0">
+           {event.image_url && (
+            <div className="relative w-full h-48 rounded-md overflow-hidden">
+              <Image src={event.image_url} alt={event.title} layout="fill" objectFit="cover" data-ai-hint="event flyer" />
             </div>
+          )}
+          <h3 className="font-semibold text-lg">{event.title}</h3>
+          <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
+          <FormattedText text={event.details} className="text-sm text-muted-foreground mt-1" />
+          <div className="flex flex-wrap gap-2 pt-2">
+              {isAdmin && <Button size="sm" variant="outline" onClick={() => { onClose(); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
+              {event.link && (
+                <Button asChild size="sm" variant="outline">
+                    <Link href={event.link}>
+                        <Share2 className="mr-2 h-4 w-4"/>
+                        View Page
+                    </Link>
+                </Button>
+              )}
+              {event.external_link && (
+                <Button asChild size="sm" variant="outline">
+                  <a href={event.external_link} target="_blank" rel="noopener noreferrer">
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Event Link
+                  </a>
+                </Button>
+              )}
+              {event.link && (
+                <Button size="sm" variant="secondary" onClick={() => copyLink(event.link!)}>
+                    <Copy className="mr-2 h-4 w-4"/>
+                    Copy Link
+                </Button>
+              )}
           </div>
-        ))}
-      </div>
-    </>
+        </div>
+      ))}
+    </div>
   );
 
   return (
@@ -934,21 +926,33 @@ export default function CalendarPage() {
       {!isMobile && (
         <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
             <DialogContent>
-                {dialogEvent && dialogEvent.length > 0 && (
-                    <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
-                )}
+              {dialogEvent && dialogEvent.length > 0 && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Events for {format(parseISO(dialogEvent[0].date), 'MMMM d')}</DialogTitle>
+                  </DialogHeader>
+                  <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
+                </>
+              )}
             </DialogContent>
         </Dialog>
       )}
 
       {isMobile && (
-        <Sheet open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
-            <SheetContent side="bottom" className="rounded-t-xl max-h-[80vh]">
-                {dialogEvent && dialogEvent.length > 0 && (
-                     <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
-                )}
-            </SheetContent>
-        </Sheet>
+        <Drawer open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
+            <DrawerContent>
+              {dialogEvent && dialogEvent.length > 0 && (
+                <>
+                  <DrawerHeader className="p-4 pb-0 text-left">
+                    <DrawerTitle>Events for {format(parseISO(dialogEvent[0].date), 'MMMM d')}</DrawerTitle>
+                  </DrawerHeader>
+                  <div className="p-4 pt-2 max-h-[80vh] overflow-y-auto">
+                    <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
+                  </div>
+                </>
+              )}
+            </DrawerContent>
+        </Drawer>
       )}
 
       {!isMobile && view === 'month' && (
