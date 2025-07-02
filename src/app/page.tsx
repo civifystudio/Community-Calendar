@@ -56,9 +56,9 @@ interface ViewProps {
   setView: React.Dispatch<React.SetStateAction<'month' | 'week'>>;
   setDialogEvent: (event: CalendarEvent[] | null) => void;
   displayDate: Date;
-  setDisplayDate: React.Dispatch<React.SetStateAction<Date>>;
+  setDisplayDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
   selectedDate: Date;
-  setSelectedDate: React.Dispatch<React.SetStateAction<Date>>;
+  setSelectedDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
   isAdmin: boolean;
   onAddEvent: () => void;
   onEditEvent: (event: CalendarEvent) => void;
@@ -555,8 +555,8 @@ export default function CalendarPage() {
   
   const [view, setView] = useState<'month' | 'week'>('month');
   const [dialogEvent, setDialogEvent] = useState<CalendarEvent[] | null>(null);
-  const [displayDate, setDisplayDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [displayDate, setDisplayDate] = useState<Date>();
+  const [selectedDate, setSelectedDate] = useState<Date>();
   
   const [allEvents, setAllEvents] = useState<CalendarEvent[]>([]);
   const [user, setUser] = useState<User | null>(null);
@@ -573,6 +573,14 @@ export default function CalendarPage() {
   useEffect(() => {
     fetchAndSetEvents();
   }, [fetchAndSetEvents]);
+
+  useEffect(() => {
+    // This effect runs only on the client, after the component mounts.
+    // This avoids the hydration mismatch between server and client `new Date()`.
+    const now = new Date();
+    setDisplayDate(now);
+    setSelectedDate(now);
+  }, []);
 
   useEffect(() => {
     const checkUserStatus = async () => {
@@ -599,7 +607,7 @@ export default function CalendarPage() {
   }, [supabase.auth, fetchAndSetEvents]);
 
   useEffect(() => {
-    if (view === 'week' && !isSameMonth(selectedDate, displayDate)) {
+    if (view === 'week' && selectedDate && displayDate && !isSameMonth(selectedDate, displayDate)) {
       setDisplayDate(selectedDate);
     }
   }, [selectedDate, view, displayDate]);
@@ -661,6 +669,16 @@ export default function CalendarPage() {
     const formattedHour = h % 12 || 12;
     return `${formattedHour}:${minutes} ${ampm}`;
   };
+
+  if (!displayDate || !selectedDate) {
+    // Render a loading state or skeleton until the date is set on the client.
+    // This ensures server and client render the same initial HTML.
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 w-full">
+          {/* You can add a more sophisticated loader or skeleton here if desired */}
+        </div>
+    );
+  }
 
   const eventsForDisplayMonth = allEvents.reduce((acc, event) => {
       const eventDate = parseISO(event.date);
@@ -731,3 +749,5 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
