@@ -738,9 +738,9 @@ export default function CalendarPage() {
       </Dialog>
       <div className="mt-8 text-center">
         {isAdmin ? (
-          <Button variant="link" size="sm" onClick={handleSignOut} className="text-gray-400 hover:text-white no-underline">Admin Logout</Button>
+          <Button variant="link" size="sm" onClick={handleSignOut} className="text-gray-400 hover:text-white no-underline hover:no-underline">Admin Logout</Button>
         ) : (
-          <Button asChild variant="link" size="sm" className="text-gray-400 hover:text-white no-underline">
+          <Button asChild variant="link" size="sm" className="text-gray-400 hover:text-white no-underline hover:no-underline">
             <Link href="/login">Admin Login</Link>
           </Button>
         )}
