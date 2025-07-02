@@ -399,9 +399,9 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
       transition={{ duration: 0.3 }}
       className="w-full flex-1 flex"
     >
-      <div className="flex flex-col md:flex-row w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
+      <div className="flex w-full bg-[#1C1C1C] border-gray-700/50 rounded-xl overflow-hidden">
         {/* Left Panel */}
-        <div className="w-full md:w-[280px] lg:w-[320px] p-4 flex flex-col border-b md:border-b-0 md:border-r border-gray-700/50 text-white">
+        <div className="hidden p-4 md:flex flex-col md:w-[280px] lg:w-[320px] border-r border-gray-700/50 text-white">
           <div className='flex flex-col space-y-4 flex-grow'>
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Community Events</h1>
@@ -742,9 +742,6 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-2 sm:p-4 w-full">
-        <div className="w-full max-w-4xl mx-auto my-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight">Upcoming Community Events</h1>
-        </div>
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
