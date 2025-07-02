@@ -785,7 +785,7 @@ export default function CalendarPage() {
   );
 
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen p-2 sm:p-4 md:p-6 w-full">
+    <div className="min-h-screen p-2 sm:p-4 md:p-6 w-full">
       <AnimatePresence mode="wait">
           {view === 'month' ? (
             <MonthView key="month" {...viewProps} />
