@@ -18,6 +18,13 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
@@ -37,6 +44,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LaidOutEvent extends CalendarEvent {
   left: number;
@@ -60,6 +68,7 @@ interface ViewProps {
   isAdmin: boolean;
   onAddEvent: () => void;
   onEditEvent: (event: CalendarEvent) => void;
+  isMobile: boolean | undefined;
 }
 
 const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarEvent> | null, date: Date, onSave: (event: CalendarEvent | Omit<CalendarEvent, "id" | "link">) => void, onCancel: () => void }) => {
@@ -156,7 +165,7 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
   };
 
 
-const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent }: ViewProps) => {
+const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent, isMobile }: ViewProps) => {
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   
   const firstDayOfMonth = getDay(new Date(displayDate.getFullYear(), displayDate.getMonth(), 1));
@@ -257,9 +266,12 @@ const MonthView = ({ allEvents, events, view, setView, setDialogEvent, displayDa
                   <Button
                     variant={isSelected ? 'default' : isToday ? 'secondary' : 'ghost'}
                     onClick={() => {
-                      if (dayDate) {
-                        setSelectedDate(dayDate);
-                      }
+                        if (dayDate) {
+                            setSelectedDate(dayDate);
+                            if (isMobile && events[day]?.length > 0) {
+                                setDialogEvent(events[day]);
+                            }
+                        }
                     }}
                     disabled={!day}
                     className={`
@@ -344,7 +356,7 @@ const getEventLayouts = (dayEvents: CalendarEvent[]): LaidOutEvent[] => {
 };
 
 
-function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent }: ViewProps) {
+function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent, onEditEvent, isMobile }: ViewProps) {
   const miniCalendarDaysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   const firstDayOfMonth = getDay(new Date(displayDate.getFullYear(), displayDate.getMonth(), 1));
@@ -494,7 +506,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
           <div className="flex-1 flex flex-col overflow-auto">
             <div className="flex flex-col flex-grow">
                 <div className="grid grid-cols-7">
-                  <div className="w-16 shrink-0"></div>
+                  <div className="w-16 shrink-0 hidden md:block"></div>
                   {weekDays.map(day => (
                     <div key={day.toString()} className="flex-1 text-center text-xs text-gray-400 font-semibold py-2">
                       {isSameDay(day, new Date()) ? <span className="bg-white text-black rounded-full px-2 py-1 font-bold">{format(day, 'EEE dd')}</span> : format(day, 'EEE dd')}
@@ -503,7 +515,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                 </div>
 
                 <div className="flex-1 flex overflow-hidden">
-                  <div className="w-16 text-xs text-gray-500 text-right pr-2 flex flex-col">
+                  <div className="w-16 text-xs text-gray-500 text-right pr-2 flex-col hidden md:flex">
                     {timeSlots.map(time => <div key={time} className="flex-1 -mt-2 pt-2">{time}</div>)}
                   </div>
                   <div className="flex-1 grid grid-cols-7">
@@ -540,7 +552,12 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
                                      width: `calc(${event.width}% - 2px)`,
                                      marginLeft: '1px',
                                     }}
-                                   onClick={() => setSelectedDate(day)}
+                                   onClick={() => {
+                                        setSelectedDate(day);
+                                        if (isMobile) {
+                                            setDialogEvent([event]);
+                                        }
+                                   }}
                                   >
                                    <div className={`h-full p-2 rounded-lg text-white text-xs flex flex-col border ${eventColorClasses[event.color as keyof typeof eventColorClasses]}`}>
                                      <span className="font-bold truncate">{event.title}</span>
@@ -567,6 +584,7 @@ function WeekView({ allEvents, events, view, setView, setDialogEvent, displayDat
 export default function CalendarPage() {
   const { toast } = useToast();
   const supabase = createClient();
+  const isMobile = useIsMobile();
   
   const [view, setView] = useState<'month' | 'week'>('month');
   const [dialogEvent, setDialogEvent] = useState<CalendarEvent[] | null>(null);
@@ -586,34 +604,25 @@ export default function CalendarPage() {
   }, []);
 
   useEffect(() => {
-    // This effect runs only on the client, after the component mounts.
-    // This avoids the hydration mismatch between server and client `new Date()`.
     const now = new Date();
     setDisplayDate(now);
     setSelectedDate(now);
   }, []);
 
   useEffect(() => {
-    // This effect sets up a timer to auto-update the calendar to the
-    // current day if the date changes (e.g., at midnight).
     const timer = setInterval(() => {
       const now = new Date();
-      // Check if the currently selected date is still today.
-      // We use the functional form of setState to avoid dependency issues.
       setSelectedDate(currentDate => {
         if (currentDate && !isSameDay(now, currentDate)) {
-          // If the day has changed, update both the selected date and the calendar view.
           setDisplayDate(now);
           return now;
         }
-        // Otherwise, keep the current selection.
         return currentDate;
       });
-    }, 60000); // Check every minute.
+    }, 60000); 
 
-    // Clean up the interval when the component is unmounted.
     return () => clearInterval(timer);
-  }, []); // The empty dependency array ensures this runs only once on mount.
+  }, []); 
 
   useEffect(() => {
     const checkUserStatus = async () => {
@@ -630,7 +639,7 @@ export default function CalendarPage() {
         setUser(session?.user ?? null);
         const adminStatus = await isAdminUser();
         setIsAdmin(adminStatus);
-        fetchAndSetEvents(); // Refetch events on auth change
+        fetchAndSetEvents(); 
       }
     );
 
@@ -718,12 +727,9 @@ export default function CalendarPage() {
     });
   };
 
-  if (!displayDate || !selectedDate) {
-    // Render a loading state or skeleton until the date is set on the client.
-    // This ensures server and client render the same initial HTML.
+  if (!displayDate || !selectedDate || isMobile === undefined) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 w-full">
-          {/* You can add a more sophisticated loader or skeleton here if desired */}
         </div>
     );
   }
@@ -738,7 +744,44 @@ export default function CalendarPage() {
       return acc;
   }, {} as EventsByDate);
 
-  const viewProps = { allEvents, events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick };
+  const viewProps = { allEvents, events: eventsForDisplayMonth, view, setView, setDialogEvent, displayDate, setDisplayDate, selectedDate, setSelectedDate, isAdmin, onAddEvent: handleAddEventClick, onEditEvent: handleEditEventClick, isMobile };
+
+  const EventDetailsContent = ({ events, onClose }: { events: CalendarEvent[], onClose: () => void }) => (
+    <>
+      <DialogHeader>
+        <DialogTitle>Events for {format(parseISO(events[0].date), 'MMMM d')}</DialogTitle>
+        <DialogDescription className="text-gray-400">
+          All scheduled events are listed below.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-4 -mr-4">
+        {events.map((event, index) => (
+          <div key={index} className="space-y-1 border-b border-gray-700/50 pb-4 last:border-b-0 last:pb-0">
+            <h3 className="font-semibold text-lg">{event.title}</h3>
+            <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
+            <p className="text-sm text-gray-400 mt-1">{event.details}</p>
+            <div className="flex gap-2 pt-2">
+                {isAdmin && <Button size="sm" variant="outline" onClick={() => { onClose(); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
+                {event.link && (
+                    <>
+                        <Button asChild size="sm" variant="outline">
+                            <Link href={event.link}>
+                                <Share2 className="mr-2 h-4 w-4"/>
+                                View Page
+                            </Link>
+                        </Button>
+                        <Button size="sm" variant="secondary" onClick={() => copyLink(event.link!)}>
+                            <Copy className="mr-2 h-4 w-4"/>
+                            Copy Link
+                        </Button>
+                    </>
+                )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-2 sm:p-4 w-full">
@@ -763,46 +806,28 @@ export default function CalendarPage() {
             )}
         </DialogContent>
       </Dialog>
-      <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
-        <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50">
-          {dialogEvent && dialogEvent.length > 0 && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Events for {format(parseISO(dialogEvent[0].date), 'MMMM d')}</DialogTitle>
-                <DialogDescription className="text-gray-400">
-                  All scheduled events are listed below.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-4 -mr-4">
-                {dialogEvent.map((event, index) => (
-                  <div key={index} className="space-y-1 border-b border-gray-700/50 pb-4 last:border-b-0 last:pb-0">
-                    <h3 className="font-semibold text-lg">{event.title}</h3>
-                    <p className="text-sm"><strong>Time:</strong> {formatTime(event.start_hour)} - {formatTime(event.end_hour)}</p>
-                    <p className="text-sm text-gray-400 mt-1">{event.details}</p>
-                    <div className="flex gap-2 pt-2">
-                        {isAdmin && <Button size="sm" variant="outline" onClick={() => { setDialogEvent(null); handleEditEventClick(event); }}><Edit className="mr-2 h-4 w-4"/> Edit</Button>}
-                        {event.link && (
-                            <>
-                                <Button asChild size="sm" variant="outline">
-                                    <Link href={event.link}>
-                                        <Share2 className="mr-2 h-4 w-4"/>
-                                        View Page
-                                    </Link>
-                                </Button>
-                                <Button size="sm" variant="secondary" onClick={() => copyLink(event.link!)}>
-                                    <Copy className="mr-2 h-4 w-4"/>
-                                    Copy Link
-                                </Button>
-                            </>
-                        )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      
+      {!isMobile && (
+        <Dialog open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)}>
+            <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50">
+                {dialogEvent && dialogEvent.length > 0 && (
+                    <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
+                )}
+            </DialogContent>
+        </Dialog>
+      )}
+
+      {isMobile && (
+        <Sheet open={!!dialogEvent} onOpenChange={(open) => !open && setDialogEvent(null)} side="bottom">
+            <SheetContent className="bg-[#1C1C1C] text-white border-gray-700/50">
+                <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-gray-600 mb-4" />
+                {dialogEvent && dialogEvent.length > 0 && (
+                     <EventDetailsContent events={dialogEvent} onClose={() => setDialogEvent(null)} />
+                )}
+            </SheetContent>
+        </Sheet>
+      )}
+
       <div className="mt-8 text-center">
         {isAdmin ? (
           <Button variant="link" size="sm" onClick={handleSignOut} className="text-gray-400 hover:text-white hover:no-underline">Admin Logout</Button>
@@ -815,3 +840,5 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
