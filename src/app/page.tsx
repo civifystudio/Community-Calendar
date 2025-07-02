@@ -100,50 +100,54 @@ const EventForm = ({ event, date, onSave, onCancel }: { event: Partial<CalendarE
           <DialogTitle>{event?.id ? 'Edit Event' : 'Add Event'}</DialogTitle>
           <DialogDescription>Fill in the details for your event.</DialogDescription>
         </DialogHeader>
-        <div className="py-6 grid sm:grid-cols-2 gap-x-4 gap-y-6">
-            <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" value={title} onChange={e => setTitle(e.target.value)} required className="bg-black/30 border-gray-600"/>
+        <div className="py-6 grid md:grid-cols-2 gap-x-8 gap-y-6">
+          <div className="flex flex-col gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required className="bg-black/30 border-gray-600" />
             </div>
-            <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="details">Details</Label>
-                <Textarea id="details" value={details} onChange={e => setDetails(e.target.value)} required className="bg-black/30 border-gray-600"/>
+            <div className="space-y-2">
+              <Label htmlFor="details">Details</Label>
+              <Textarea id="details" value={details} onChange={(e) => setDetails(e.target.value)} required className="bg-black/30 border-gray-600" />
             </div>
-             <div className="space-y-2">
-                <Label htmlFor="startHour">Start Time (24h)</Label>
-                <Input id="startHour" type="number" min="0" max="23" value={startHour} onChange={e => setStartHour(Number(e.target.value))} required className="bg-black/30 border-gray-600"/>
-             </div>
-             <div className="space-y-2">
-                <Label htmlFor="endHour">End Time (24h)</Label>
-                <Input id="endHour" type="number" min="0" max="24" value={endHour} onChange={e => setEndHour(Number(e.target.value))} required className="bg-black/30 border-gray-600"/>
-             </div>
-             <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="link">Link (Optional)</Label>
-                <Input id="link" type="url" value={link} placeholder="https://example.com" onChange={e => setLink(e.target.value)} className="bg-black/30 border-gray-600"/>
-             </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="color">Color</Label>
-                <Select value={color} onValueChange={(value: 'green' | 'blue' | 'purple' | 'yellow') => setColor(value)}>
-                    <SelectTrigger id="color" className="bg-black/30 border-gray-600">
-                        <SelectValue placeholder="Select a color" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="blue">Blue</SelectItem>
-                        <SelectItem value="green">Green</SelectItem>
-                        <SelectItem value="purple">Purple</SelectItem>
-                        <SelectItem value="yellow">Yellow</SelectItem>
-                    </SelectContent>
-                </Select>
-               </div>
-            <div className="space-y-2 sm:row-start-4">
-                <Label>Date</Label>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate as (date?: Date) => void}
-                  className="rounded-md border bg-black/30 border-gray-600"
-                />
+                <Label htmlFor="startHour">Start Time (24h)</Label>
+                <Input id="startHour" type="number" min="0" max="23" value={startHour} onChange={(e) => setStartHour(Number(e.target.value))} required className="bg-black/30 border-gray-600" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endHour">End Time (24h)</Label>
+                <Input id="endHour" type="number" min="0" max="24" value={endHour} onChange={(e) => setEndHour(Number(e.target.value))} required className="bg-black/30 border-gray-600" />
+              </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="link">Link (Optional)</Label>
+              <Input id="link" type="url" value={link} placeholder="https://example.com" onChange={(e) => setLink(e.target.value)} className="bg-black/30 border-gray-600" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="color">Color</Label>
+              <Select value={color} onValueChange={(value: 'green' | 'blue' | 'purple' | 'yellow') => setColor(value)}>
+                <SelectTrigger id="color" className="bg-black/30 border-gray-600">
+                  <SelectValue placeholder="Select a color" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="blue">Blue</SelectItem>
+                  <SelectItem value="green">Green</SelectItem>
+                  <SelectItem value="purple">Purple</SelectItem>
+                  <SelectItem value="yellow">Yellow</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Date</Label>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate as (date?: Date) => void}
+              className="rounded-md border bg-black/30 border-gray-600 w-full"
+            />
+          </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
@@ -697,7 +701,7 @@ export default function CalendarPage() {
           )}
       </AnimatePresence>
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50 sm:max-w-lg">
+        <DialogContent className="bg-[#1C1C1C] text-white border-gray-700/50 sm:max-w-3xl">
             {editingEvent && selectedDate && (
                 <EventForm event={editingEvent} date={selectedDate} onSave={handleSaveEvent} onCancel={() => setIsFormOpen(false)} />
             )}
@@ -744,5 +748,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
