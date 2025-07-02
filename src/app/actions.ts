@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -117,4 +118,29 @@ export async function signOut() {
     await supabase.auth.signOut();
     revalidatePath('/');
     revalidatePath('/login');
+}
+
+export async function getPageVisits() {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('page_visits')
+    .select('count')
+    .eq('id', 1)
+    .single();
+
+  if (error) {
+    console.error('Error fetching page visits:', error);
+    // Return 0 if the row doesn't exist yet, which is expected on first visit.
+    return 0;
+  }
+  return data?.count || 0;
+}
+
+export async function incrementPageVisits() {
+  const supabase = createClient();
+  const { error } = await supabase.rpc('increment_page_visits');
+
+  if (error) {
+    console.error('Error incrementing page visits:', error);
+  }
 }

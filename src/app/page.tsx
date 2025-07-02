@@ -30,7 +30,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addMonths, subMonths, getDaysInMonth, getDay, isSameDay, isSameMonth, getDate, startOfWeek, addDays, subDays, parseISO } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
-import { getEvents, addEvent, updateEvent, deleteEvent, signOut, CalendarEvent, isAdminUser } from './actions';
+import { getEvents, addEvent, updateEvent, deleteEvent, signOut, CalendarEvent, isAdminUser, getPageVisits, incrementPageVisits } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -564,15 +564,12 @@ export default function CalendarPage() {
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Partial<CalendarEvent> | null>(null);
+  const [visits, setVisits] = useState<number | null>(null);
 
   const fetchAndSetEvents = useCallback(async () => {
     const eventsFromDb = await getEvents();
     setAllEvents(eventsFromDb);
   }, []);
-
-  useEffect(() => {
-    fetchAndSetEvents();
-  }, [fetchAndSetEvents]);
 
   useEffect(() => {
     // This effect runs only on the client, after the component mounts.
@@ -581,6 +578,22 @@ export default function CalendarPage() {
     setDisplayDate(now);
     setSelectedDate(now);
   }, []);
+
+  useEffect(() => {
+    const initVisits = async () => {
+      try {
+        await incrementPageVisits();
+        const currentVisits = await getPageVisits();
+        setVisits(currentVisits);
+      } catch (error) {
+        console.error("Failed to update page visits:", error);
+        // Fallback to just fetching the count if increment fails
+        const currentVisits = await getPageVisits();
+        setVisits(currentVisits);
+      }
+    };
+    initVisits();
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   useEffect(() => {
     const checkUserStatus = async () => {
@@ -612,6 +625,10 @@ export default function CalendarPage() {
     }
   }, [selectedDate, view, displayDate]);
 
+  useEffect(() => {
+    fetchAndSetEvents();
+  }, [fetchAndSetEvents]);
+  
   const handleSignOut = async () => {
     await signOut();
     toast({ title: "Signed out successfully." });
@@ -737,7 +754,10 @@ export default function CalendarPage() {
           )}
         </DialogContent>
       </Dialog>
-      <div className="mt-8">
+      <div className="mt-8 text-center">
+        <p className="text-sm text-gray-500 mb-2">
+          Page Visits: {visits !== null ? visits.toLocaleString() : '...'}
+        </p>
         {isAdmin ? (
           <Button variant="link" size="sm" onClick={handleSignOut} className="text-gray-400 hover:text-white">Admin Logout</Button>
         ) : (
@@ -749,5 +769,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
