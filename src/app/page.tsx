@@ -576,6 +576,28 @@ export default function CalendarPage() {
   }, []);
 
   useEffect(() => {
+    // This effect sets up a timer to auto-update the calendar to the
+    // current day if the date changes (e.g., at midnight).
+    const timer = setInterval(() => {
+      const now = new Date();
+      // Check if the currently selected date is still today.
+      // We use the functional form of setState to avoid dependency issues.
+      setSelectedDate(currentDate => {
+        if (currentDate && !isSameDay(now, currentDate)) {
+          // If the day has changed, update both the selected date and the calendar view.
+          setDisplayDate(now);
+          return now;
+        }
+        // Otherwise, keep the current selection.
+        return currentDate;
+      });
+    }, 60000); // Check every minute.
+
+    // Clean up the interval when the component is unmounted.
+    return () => clearInterval(timer);
+  }, []); // The empty dependency array ensures this runs only once on mount.
+
+  useEffect(() => {
     const checkUserStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
@@ -748,3 +770,5 @@ export default function CalendarPage() {
     </div>
   );
 }
+
+    
